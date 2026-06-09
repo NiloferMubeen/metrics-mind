@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetricsMind — Is Your Accuracy Lying?</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a28;
+    --card: #16161f;
+    --card2: #1e1e2e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0ff;
+    --text2: #9090b0;
+    --text3: #5a5a80;
+    --accent1: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --accent5: #ef4444;
+    --accent6: #ec4899;
+    --grad1: linear-gradient(135deg, #7c3aed, #ec4899);
+    --grad2: linear-gradient(135deg, #06b6d4, #10b981);
+    --grad3: linear-gradient(135deg, #f59e0b, #ef4444);
+    --glow1: 0 0 40px rgba(124,58,237,0.3);
+    --glow2: 0 0 40px rgba(6,182,212,0.3);
+    --radius: 16px;
+    --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .light-mode {
+    --bg: #f5f5ff;
+    --bg2: #eeeeff;
+    --bg3: #e5e5f5;
+    --card: #ffffff;
+    --card2: #f8f8ff;
+    --border: rgba(0,0,0,0.08);
+    --text: #0f0f1a;
+    --text2: #44445a;
+    --text3: #8888a8;
+    --glow1: 0 0 40px rgba(124,58,237,0.15);
+    --glow2: 0 0 40px rgba(6,182,212,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background var(--transition), color var(--transition);
+    overflow-x: hidden;
+    font-weight: 300;
+    letter-spacing: 0.012em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADINGS */
+  h1, h2, h3, h4 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--accent1); border-radius: 3px; }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px;
+    height: 64px;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition);
+  }
+  .light-mode nav { background: rgba(245,245,255,0.85); }
+  .nav-logo {
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+  }
+  .nav-logo img {
+    height: 36px; width: auto; object-fit: contain; display: block;
+    /* white logo looks great on dark nav; on light mode we add a dark rounded bg */
+    border-radius: 8px; padding: 4px 8px;
+    background: #111118;
+    transition: opacity 0.2s;
+  }
+  .nav-logo img:hover { opacity: 0.85; }
+  .nav-links { display: flex; gap: 8px; align-items: center; }
+  .nav-link {
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    color: var(--text2); border: none; background: none;
+    transition: all var(--transition); font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .nav-link:hover, .nav-link.active {
+    color: var(--text); background: var(--bg3);
+  }
+  .nav-link.active { color: var(--accent2); }
+  .toggle-btn {
+    width: 48px; height: 26px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 13px; cursor: pointer;
+    position: relative; transition: all var(--transition);
+    flex-shrink: 0;
+  }
+  .toggle-btn::after {
+    content: '';
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--grad1);
+    transition: transform var(--transition);
+    box-shadow: 0 0 8px rgba(124,58,237,0.6);
+  }
+  .light-mode .toggle-btn::after { transform: translateX(22px); background: var(--grad3); }
+  .toggle-icon { font-size: 11px; position: absolute; top: 50%; transform: translateY(-50%); }
+  .toggle-icon.moon { left: 6px; }
+  .toggle-icon.sun { right: 5px; }
+
+  /* ─── PAGES ─── */
+  .page { display: none; min-height: 100vh; padding-top: 64px; }
+  .page.active { display: block; }
+
+  /* ─── HOME ─── */
+  #page-home { position: relative; overflow: hidden; }
+  .hero {
+    min-height: calc(100vh - 64px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 60px 24px;
+    position: relative;
+  }
+  /* Animated background orbs */
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.15; pointer-events: none;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .orb1 { width: 500px; height: 500px; background: var(--accent1); top: -100px; left: -150px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: 0; right: -100px; animation-delay: 3s; }
+  .orb3 { width: 300px; height: 300px; background: var(--accent6); top: 40%; left: 60%; animation-delay: 1.5s; }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-20px) scale(1.05); }
+    66% { transform: translate(-20px,30px) scale(0.95); }
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 999px;
+    border: 1px solid rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.1);
+    font-size: 13px; color: var(--accent2);
+    font-family: 'Fira Code', monospace;
+    margin-bottom: 28px;
+    animation: fadeSlideUp 0.6s ease both;
+  }
+  .hero-badge::before { content: '⚡'; }
+  .hero-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(36px, 6vw, 76px);
+    font-weight: 600;
+    line-height: 1.0;
+    margin-bottom: 12px;
+    animation: fadeSlideUp 0.6s 0.1s ease both;
+  }
+  .hero-title .line1 { display: block; }
+  .hero-title .line2 {
+    display: block;
+    background: var(--grad1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-title .line3 {
+    display: block;
+    background: var(--grad2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 2.5vw, 22px);
+    color: var(--text2); max-width: 600px;
+    line-height: 1.6; margin-bottom: 48px;
+    animation: fadeSlideUp 0.6s 0.2s ease both;
+  }
+  .hero-cta {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    animation: fadeSlideUp 0.6s 0.3s ease both;
+    margin-bottom: 80px;
+  }
+  .btn-primary {
+    padding: 14px 32px; border-radius: 12px;
+    background: var(--grad1); color: #fff;
+    font-weight: 500; font-size: 16px; cursor: pointer;
+    border: none; font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: var(--glow1);
+    transition: all var(--transition);
+    position: relative; overflow: hidden;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: white; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,58,237,0.5); }
+  .btn-primary:hover::after { opacity: 0.1; }
+  .btn-secondary {
+    padding: 14px 32px; border-radius: 12px;
+    background: transparent; color: var(--text);
+    font-weight: 500; font-size: 16px; cursor: pointer;
+    border: 1px solid var(--border); font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all var(--transition);
+  }
+  .btn-secondary:hover { background: var(--bg3); border-color: var(--accent1); }
+
+  /* METRICS PREVIEW CARDS */
+  .metrics-preview {
+    display: flex; flex-direction: row; flex-wrap: nowrap;
+    gap: 12px; width: 100%; max-width: 960px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .metrics-preview::-webkit-scrollbar { height: 3px; }
+  .metrics-preview::-webkit-scrollbar-thumb { background: var(--accent1); border-radius: 2px; }
+  .metric-chip { flex: 1; min-width: 120px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--chip-color, #7c3aed) 18%, transparent), color-mix(in srgb, var(--chip-color, #7c3aed) 6%, transparent));
+    border: 1px solid color-mix(in srgb, var(--chip-color, #7c3aed) 35%, transparent);
+    border-radius: var(--radius); padding: 20px 16px;
+    text-align: center; cursor: pointer;
+    transition: all var(--transition);
+    position: relative; overflow: hidden;
+  }
+  .metric-chip::before {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--chip-color, var(--accent1));
+    transform: scaleX(0); transition: transform var(--transition);
+  }
+  .metric-chip:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+  .metric-chip:hover::before { transform: scaleX(1); }
+  .chip-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+  .chip-name { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 14px; }
+  .chip-tag { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: 'Fira Code', monospace; }
+
+  /* MARQUEE */
+  .marquee-wrap { overflow: hidden; padding: 20px 0; border-top: 1px solid rgba(236,72,153,0.3); border-bottom: 1px solid rgba(236,72,153,0.3); background: linear-gradient(90deg, #be185d, #ec4899, #f472b6, #ec4899, #be185d); }
+  .marquee-track { display: flex; gap: 40px; animation: marquee 25s linear infinite; white-space: nowrap; }
+  .marquee-item { font-family: 'Fira Code', monospace; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 12px; font-weight: 400; }
+  .marquee-item span { color: #fce7f3; opacity: 0.85; }
+  @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+  /* STORY SECTION */
+  .story-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+  .section-label { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(28px, 4vw, 48px); font-weight: 600; margin-bottom: 20px; }
+  .story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .story-text p { color: var(--text2); line-height: 1.8; margin-bottom: 16px; font-size: 16px; }
+  .story-visual { background: linear-gradient(145deg, rgba(124,58,237,0.1), rgba(6,182,212,0.06)); border: 1px solid rgba(124,58,237,0.2); border-radius: 20px; padding: 32px; }
+  .confusion-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .cm-cell {
+    padding: 20px; border-radius: 10px; text-align: center;
+    font-family: 'Fira Code', monospace;
+  }
+  .cm-tp { background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(16,185,129,0.1)); border: 1px solid rgba(16,185,129,0.5); color: var(--accent4); }
+  .cm-fp { background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(239,68,68,0.1)); border: 1px solid rgba(239,68,68,0.5); color: var(--accent5); }
+  .cm-fn { background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(245,158,11,0.1)); border: 1px solid rgba(245,158,11,0.5); color: var(--accent3); }
+  .cm-tn { background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(6,182,212,0.1)); border: 1px solid rgba(6,182,212,0.5); color: var(--accent2); }
+  .cm-label { font-size: 11px; opacity: 0.7; margin-bottom: 4px; }
+  .cm-val { font-size: 28px; font-weight: 600; }
+  .cm-name { font-size: 12px; margin-top: 4px; }
+
+  /* TOPICS GRID */
+  .topics-section { padding: 80px 24px; background: linear-gradient(160deg, rgba(124,58,237,0.06) 0%, var(--bg2) 40%, rgba(6,182,212,0.05) 100%); }
+  .topics-inner { max-width: 1100px; margin: 0 auto; }
+  .topics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 40px; }
+  .topic-card {
+    background: linear-gradient(160deg, var(--card) 60%, rgba(124,58,237,0.06));
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+    cursor: pointer; transition: all var(--transition);
+    position: relative; overflow: hidden;
+  }
+  .topic-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--tc-color, var(--grad1));
+  }
+  .topic-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15); }
+  .tc-icon { font-size: 36px; margin-bottom: 16px; }
+  .tc-title { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 18px; margin-bottom: 8px; }
+  .tc-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+  .tc-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tc-tag { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'Fira Code', monospace; background: var(--bg3); color: var(--text3); }
+  .tc-arrow { position: absolute; bottom: 24px; right: 24px; font-size: 20px; color: var(--text3); transition: all var(--transition); }
+  .topic-card:hover .tc-arrow { color: var(--accent2); transform: translate(3px,-3px); }
+
+  /* SESSIONS SECTION */
+  .sessions-section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+  .timeline { margin-top: 40px; }
+  .tl-item { display: flex; gap: 24px; margin-bottom: 32px; position: relative; }
+  .tl-item::before { content: ''; position: absolute; left: 19px; top: 40px; bottom: -32px; width: 2px; background: var(--border); }
+  .tl-item:last-child::before { display: none; }
+  .tl-dot { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; margin-top: 4px; }
+  .tl-content { flex: 1; }
+  .tl-time { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+  .tl-title { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 16px; margin-bottom: 6px; }
+  .tl-text { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── CONTENT PAGES ─── */
+  .content-page { padding: 40px 24px; max-width: 1100px; margin: 0 auto; }
+  .content-header { margin-bottom: 40px; }
+  .content-header h1 { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: clamp(28px,4vw,48px); margin-bottom: 12px; }
+  .content-header p { color: var(--text2); font-size: 18px; line-height: 1.6; }
+
+  /* INFO CARDS */
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .info-card {
+    border-radius: var(--radius); padding: 24px;
+    transition: all var(--transition);
+  }
+  .info-card:nth-child(1) { background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(124,58,237,0.04)); border: 1px solid rgba(124,58,237,0.25); }
+  .info-card:nth-child(2) { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04)); border: 1px solid rgba(239,68,68,0.25); }
+  .info-card:nth-child(3) { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04)); border: 1px solid rgba(245,158,11,0.25); }
+  .info-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.25); }
+  .info-card h3 { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .info-card p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  /* FORMULA BOX */
+  .formula-box {
+    background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(124,58,237,0.06));
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: var(--radius); padding: 20px 24px;
+    font-family: 'Fira Code', monospace; font-size: 14px; font-weight: 300;
+    margin: 20px 0; position: relative; overflow: hidden;
+  }
+  .formula-box::before { content: 'FORMULA'; position: absolute; top: 10px; right: 16px; font-size: 10px; color: var(--accent2); letter-spacing: 2px; }
+  .formula-box .f-main { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  .formula-box .f-main .highlight { color: var(--accent2); }
+  .formula-box .f-note { font-size: 12px; color: var(--text3); }
+
+  /* TABS */
+  .tab-bar { display: flex; gap: 4px; background: var(--bg2); border-radius: 12px; padding: 4px; margin-bottom: 28px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 18px; border-radius: 8px; border: none;
+    background: none; color: var(--text2); font-size: 14px;
+    font-weight: 500; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all var(--transition);
+  }
+  .tab-btn.active { background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* METRIC DISPLAY */
+  .metric-display { display: flex; flex-direction: column; gap: 20px; }
+  .metric-row {
+    background: linear-gradient(135deg, rgba(16,185,129,0.07), rgba(6,182,212,0.04));
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: var(--radius); padding: 24px;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 16px; align-items: start;
+    transition: all var(--transition);
+  }
+  .metric-row:hover { border-color: rgba(16,185,129,0.4); box-shadow: 0 6px 24px rgba(16,185,129,0.1); }
+  .mr-label { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 16px; margin-bottom: 6px; }
+  .mr-formula { font-family: 'Fira Code', monospace; font-size: 13px; color: var(--accent3); margin-bottom: 8px; }
+  .mr-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+  .mr-value { text-align: right; }
+  .mr-num { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 32px; }
+  .mr-tag { font-size: 11px; color: var(--text3); font-family: 'Fira Code', monospace; }
+
+  /* BAR */
+  .bar-wrap { margin-top: 10px; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+
+  /* EXAMPLE SCENARIO */
+  .scenario-box {
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.05));
+    border: 1px solid rgba(124,58,237,0.3);
+    border-radius: 20px; padding: 28px; margin: 24px 0;
+  }
+  .scenario-title { font-family: 'Outfit', sans-serif; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .scenario-box p { color: var(--text2); font-size: 14px; line-height: 1.8; }
+  .scenario-box strong { color: var(--text); }
+
+  /* CLASS REPORT TABLE */
+  .report-table { width: 100%; border-collapse: collapse; font-family: 'Fira Code', monospace; font-size: 13px; margin: 16px 0; }
+  .report-table th { padding: 10px 14px; background: var(--bg3); color: var(--text2); text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: 1px; }
+  .report-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .report-table tr:hover td { background: var(--bg3); color: var(--text); }
+  .report-table .highlight-row td { color: var(--accent2); }
+  .report-table td:nth-child(2), .report-table td:nth-child(3), .report-table td:nth-child(4) { color: var(--text); }
+  .support-col { color: var(--accent3) !important; }
+
+  /* ROC */
+  .roc-container { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  #roc-canvas { width: 100%; max-width: 400px; display: block; margin: 0 auto; }
+
+  /* QUIZ */
+  .quiz-section { margin-top: 40px; }
+  .quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: gap; }
+  .quiz-header h2 { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 24px; }
+  .quiz-progress { font-family: 'Fira Code', monospace; font-size: 13px; color: var(--text3); }
+  .quiz-card {
+    background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.04));
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 20px; padding: 32px;
+    animation: fadeSlideUp 0.4s ease both;
+  }
+  .quiz-q { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 18px; margin-bottom: 24px; line-height: 1.5; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt {
+    padding: 14px 20px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg2);
+    cursor: pointer; font-size: 15px; color: var(--text2);
+    transition: all var(--transition); text-align: left;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .quiz-opt:hover { border-color: var(--accent1); color: var(--text); background: rgba(124,58,237,0.08); }
+  .quiz-opt.correct { border-color: var(--accent4); background: rgba(16,185,129,0.12); color: var(--accent4); }
+  .quiz-opt.wrong { border-color: var(--accent5); background: rgba(239,68,68,0.12); color: var(--accent5); }
+  .quiz-feedback { margin-top: 20px; padding: 16px 20px; border-radius: 10px; font-size: 14px; line-height: 1.6; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent4); }
+  .quiz-feedback.wrong-fb { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--accent5); }
+  .quiz-nav { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+  .score-display {
+    text-align: center; padding: 48px 24px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.1));
+    border-radius: 20px; border: 1px solid rgba(124,58,237,0.2);
+  }
+  .score-num { font-family: 'Outfit', sans-serif; font-size: 80px; font-weight: 600; background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .score-label { color: var(--text2); font-size: 18px; margin-bottom: 24px; }
+  .score-msg { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+
+  /* HIGHLIGHT PILL */
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-family: 'Fira Code', monospace; }
+  .pill-purple { background: rgba(124,58,237,0.15); color: var(--accent1); border: 1px solid rgba(124,58,237,0.3); }
+  .pill-cyan { background: rgba(6,182,212,0.15); color: var(--accent2); border: 1px solid rgba(6,182,212,0.3); }
+  .pill-green { background: rgba(16,185,129,0.15); color: var(--accent4); border: 1px solid rgba(16,185,129,0.3); }
+  .pill-red { background: rgba(239,68,68,0.15); color: var(--accent5); border: 1px solid rgba(239,68,68,0.3); }
+  .pill-amber { background: rgba(245,158,11,0.15); color: var(--accent3); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* ALERT BOX */
+  .alert-box { border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-warn { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.06)); border: 1px solid rgba(245,158,11,0.4); }
+  .alert-info { background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(6,182,212,0.06)); border: 1px solid rgba(6,182,212,0.4); }
+  .alert-success { background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.06)); border: 1px solid rgba(16,185,129,0.4); }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+  .alert-text { font-size: 14px; line-height: 1.6; color: var(--text2); }
+  .alert-text strong { color: var(--text); }
+
+  /* ANIMATED NUMBER */
+  @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* FADE ANIMATIONS */
+  @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* INTERACTIVE CONFUSION MATRIX */
+  .cm-interactive { display: grid; grid-template-columns: auto 1fr 1fr; gap: 2px; margin: 20px 0; }
+  .cm-header-cell { display: flex; align-items: center; justify-content: center; padding: 10px; font-size: 11px; color: var(--text3); font-family: 'Fira Code', monospace; }
+  .cm-data-cell {
+    padding: 24px 16px; border-radius: 8px; text-align: center;
+    cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .cm-data-cell:hover { transform: scale(1.03); }
+  .cm-data-cell .cm-big { font-family: 'Outfit', sans-serif; font-size: 36px; font-weight: 600; }
+  .cm-data-cell .cm-small { font-size: 11px; margin-top: 4px; font-family: 'Fira Code', monospace; }
+  .cm-tooltip {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px;
+    white-space: nowrap; pointer-events: none; opacity: 0;
+    transition: opacity 0.2s; z-index: 10; color: var(--text2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .cm-data-cell:hover .cm-tooltip { opacity: 1; }
+
+  /* AUC interactive */
+  .threshold-slider { width: 100%; accent-color: var(--accent1); margin: 16px 0; }
+  .threshold-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 12px; }
+  .tr-card { background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.05)); border-radius: 10px; padding: 14px; text-align: center; border: 1px solid rgba(124,58,237,0.15); }
+  .tr-val { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 24px; }
+  .tr-name { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: 'Fira Code', monospace; }
+
+  /* COMPARISON TABLE */
+  .compare-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  .compare-table th { padding: 12px 16px; background: var(--bg3); font-size: 13px; font-family: 'Outfit', sans-serif; font-weight: 500; text-align: left; border-bottom: 2px solid var(--border); }
+  .compare-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text2); }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .check { color: var(--accent4); }
+  .cross { color: var(--accent5); }
+
+  /* RESPONSIVE */
+  /* HAMBURGER */
+  .hamburger {
+    display: none; flex-direction: column; gap: 5px;
+    cursor: pointer; padding: 6px; border: none; background: none;
+    border-radius: 8px; transition: background var(--transition);
+  }
+  .hamburger:hover { background: var(--bg3); }
+  .hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text2); border-radius: 2px;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    transform-origin: center;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* MOBILE DRAWER */
+  .mobile-drawer {
+    display: none; position: fixed; top: 64px; left: 0; right: 0;
+    background: rgba(10,10,15,0.97); backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px; z-index: 99;
+    flex-direction: column; gap: 4px;
+    animation: drawerSlide 0.25s ease both;
+  }
+  .light-mode .mobile-drawer { background: rgba(245,245,255,0.97); }
+  .mobile-drawer.open { display: flex; }
+  @keyframes drawerSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mobile-drawer .nav-link {
+    width: 100%; text-align: left; padding: 12px 16px;
+    font-size: 15px; border-radius: 10px;
+  }
+  .mobile-drawer .drawer-divider {
+    height: 1px; background: var(--border); margin: 8px 0;
+  }
+
+  /* Hide desktop toggle on mobile, hide mobile controls on desktop */
+  @media (min-width: 769px) {
+    .hamburger { display: none !important; }
+    /* the second toggle-btn (inside the mobile row) */
+    nav > div:last-child .toggle-btn { display: none; }
+  }
+  @media (max-width: 768px) {
+    /* hide the toggle inside .nav-links since nav-links is hidden anyway */
+    .nav-links .toggle-btn { display: none; }
+    .story-grid { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .content-page { padding: 24px 16px; }
+    .cm-interactive { grid-template-columns: auto 1fr 1fr; }
+    .threshold-results { grid-template-columns: repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <img src="data:image/webp;base64,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" alt="GUVI HCL" style="height:36px;width:auto;object-fit:contain;display:block;">
+  </div>
+  <div class="nav-links">
+    <button class="nav-link active" data-page="home"      onclick="showPage('home')">Home</button>
+    <button class="nav-link"        data-page="accuracy"  onclick="showPage('accuracy')">🎯 Accuracy</button>
+    <button class="nav-link"        data-page="precision-recall" onclick="showPage('precision-recall')">🔬 P &amp; R</button>
+    <button class="nav-link"        data-page="f1"        onclick="showPage('f1')">⚖️ F1</button>
+    <button class="nav-link"        data-page="report"    onclick="showPage('report')">📊 Report</button>
+    <button class="nav-link"        data-page="auc"       onclick="showPage('auc')">📈 AUC-ROC</button>
+    <button class="nav-link"        data-page="quiz"      onclick="showPage('quiz')">🎯 Quiz</button>
+    <button class="toggle-btn" onclick="toggleTheme()" title="Toggle theme">
+      <span class="toggle-icon moon">🌙</span>
+      <span class="toggle-icon sun">☀️</span>
+    </button>
+  </div>
+  <!-- Hamburger (mobile) -->
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="toggle-btn" onclick="toggleTheme()" title="Toggle theme" style="flex-shrink:0">
+      <span class="toggle-icon moon">🌙</span>
+      <span class="toggle-icon sun">☀️</span>
+    </button>
+    <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div class="mobile-drawer" id="mobile-drawer">
+  <button class="nav-link" data-page="home"           onclick="showPage('home');closeDrawer()">🏠 Home</button>
+  <button class="nav-link" data-page="accuracy"       onclick="showPage('accuracy');closeDrawer()">🎯 Accuracy — The Lying Metric</button>
+  <button class="nav-link" data-page="precision-recall" onclick="showPage('precision-recall');closeDrawer()">🔬 Precision &amp; Recall</button>
+  <button class="nav-link" data-page="f1"             onclick="showPage('f1');closeDrawer()">⚖️ F1 Score</button>
+  <button class="nav-link" data-page="report"         onclick="showPage('report');closeDrawer()">📊 Classification Report</button>
+  <button class="nav-link" data-page="auc"            onclick="showPage('auc');closeDrawer()">📈 AUC-ROC Curve</button>
+  <div class="drawer-divider"></div>
+  <button class="nav-link" data-page="quiz"           onclick="showPage('quiz');closeDrawer()" style="color:var(--accent2);background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2)">🩺 Metric Doctor &amp; Quiz</button>
+</div>
+
+
+
+<!-- ═══════════════════════════════════════════════ HOME ═══════ -->
+<div id="page-home" class="page active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;">
+      <div class="hero-badge">Session · Evaluation Metrics · Interactive</div>
+      <h1 class="hero-title">
+        <span class="line1">Classification Accuracy</span>
+        <span class="line2">Looks Good…</span>
+        <span class="line3">But Is It Lying?</span>
+      </h1>
+      <p class="hero-sub">A deep-dive into what numbers really mean — Precision, Recall, F1, Macro/Micro averages, AUC-ROC and the full Classification Report. With interactive examples.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="showPage('accuracy')">Start Learning →</button>
+        <button class="btn-secondary" onclick="showPage('quiz')">🎯 Take Quiz</button>
+      </div>
+      <!-- Metric chips -->
+      <div class="metrics-preview">
+        <div class="metric-chip" style="--chip-color:#7c3aed" onclick="showPage('accuracy')">
+          <span class="chip-icon">🎯</span>
+          <div class="chip-name">Accuracy</div>
+          <div class="chip-tag">TP+TN / Total</div>
+        </div>
+        <div class="metric-chip" style="--chip-color:#ec4899" onclick="showPage('precision-recall')">
+          <span class="chip-icon">🔬</span>
+          <div class="chip-name">Precision</div>
+          <div class="chip-tag">TP / TP+FP</div>
+        </div>
+        <div class="metric-chip" style="--chip-color:#06b6d4" onclick="showPage('precision-recall')">
+          <span class="chip-icon">📡</span>
+          <div class="chip-name">Recall</div>
+          <div class="chip-tag">TP / TP+FN</div>
+        </div>
+        <div class="metric-chip" style="--chip-color:#10b981" onclick="showPage('f1')">
+          <span class="chip-icon">⚖️</span>
+          <div class="chip-name">F1 Score</div>
+          <div class="chip-tag">Harmonic Mean</div>
+        </div>
+        <div class="metric-chip" style="--chip-color:#f59e0b" onclick="showPage('report')">
+          <span class="chip-icon">📊</span>
+          <div class="chip-name">Macro/Micro</div>
+          <div class="chip-tag">Avg Strategies</div>
+        </div>
+        <div class="metric-chip" style="--chip-color:#ef4444" onclick="showPage('auc')">
+          <span class="chip-icon">📈</span>
+          <div class="chip-name">AUC-ROC</div>
+          <div class="chip-tag">Threshold-free</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee-track" id="marqueeTrack">
+      <span class="marquee-item">Accuracy <span>≠</span> Performance</span>
+      <span class="marquee-item">🚨 Class Imbalance Kills Accuracy</span>
+      <span class="marquee-item">Precision = How Often You're Right</span>
+      <span class="marquee-item">Recall = How Much You Catch</span>
+      <span class="marquee-item">F1 = The Balance Point</span>
+      <span class="marquee-item">AUC = 0.5 means Coin Flip</span>
+      <span class="marquee-item">Support = Sample Size Matters</span>
+      <span class="marquee-item">Macro vs Micro = Fairness vs Frequency</span>
+      <!-- duplicate for loop -->
+      <span class="marquee-item">Accuracy <span>≠</span> Performance</span>
+      <span class="marquee-item">🚨 Class Imbalance Kills Accuracy</span>
+      <span class="marquee-item">Precision = How Often You're Right</span>
+      <span class="marquee-item">Recall = How Much You Catch</span>
+      <span class="marquee-item">F1 = The Balance Point</span>
+      <span class="marquee-item">AUC = 0.5 means Coin Flip</span>
+      <span class="marquee-item">Support = Sample Size Matters</span>
+      <span class="marquee-item">Macro vs Micro = Fairness vs Frequency</span>
+    </div>
+  </div>
+
+  <!-- THE STORY -->
+  <section class="story-section">
+    <div class="section-label">The Problem</div>
+    <div class="section-title">Why "98% Accuracy" Can Be Completely Worthless</div>
+    <div class="story-grid">
+      <div class="story-text">
+        <p>Imagine building a cancer detection model. You test it on 1000 patients — 990 are healthy, only 10 have cancer. Your model predicts <strong>"Healthy"</strong> for everyone and achieves <strong>99% accuracy</strong>.</p>
+        <p>But it <strong>missed every single cancer patient</strong>. That's the accuracy paradox — and it's why we need Precision, Recall, F1, and AUC-ROC to tell the full story.</p>
+        <div style="background:linear-gradient(135deg,rgba(239,68,68,0.18),rgba(245,158,11,0.1));border:1px solid rgba(239,68,68,0.45);border-radius:14px;padding:16px 20px;margin:16px 0;display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0">🚨</span>
+          <div style="font-size:14px;line-height:1.6;color:var(--text2)"><strong style="color:#fca5a5">Class Imbalance Alert:</strong> When one class dominates, accuracy becomes a lie. A model predicting only the majority class still looks great on paper.</div>
+        </div>
+      </div>
+      <div class="story-visual">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;margin-bottom:8px;">Confusion Matrix</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Interactive — hover each cell</div>
+        <div class="cm-interactive">
+          <div class="cm-header-cell"></div>
+          <div class="cm-header-cell">Predicted +</div>
+          <div class="cm-header-cell">Predicted −</div>
+          <div class="cm-header-cell" style="writing-mode:vertical-lr;transform:rotate(180deg);font-size:10px;">Actual +</div>
+          <div class="cm-data-cell cm-tp">
+            <div class="cm-big">TP</div>
+            <div class="cm-small">True Positive</div>
+            <div class="cm-tooltip">✅ Correctly predicted POSITIVE<br>Sick predicted as Sick</div>
+          </div>
+          <div class="cm-data-cell cm-fn">
+            <div class="cm-big">FN</div>
+            <div class="cm-small">False Negative</div>
+            <div class="cm-tooltip">❌ Missed! Actual POSITIVE<br>predicted as Negative<br><strong>Type II Error</strong></div>
+          </div>
+          <div class="cm-header-cell" style="writing-mode:vertical-lr;transform:rotate(180deg);font-size:10px;">Actual −</div>
+          <div class="cm-data-cell cm-fp">
+            <div class="cm-big">FP</div>
+            <div class="cm-small">False Positive</div>
+            <div class="cm-tooltip">⚠️ False Alarm! Actual NEGATIVE<br>predicted as Positive<br><strong>Type I Error</strong></div>
+          </div>
+          <div class="cm-data-cell cm-tn">
+            <div class="cm-big">TN</div>
+            <div class="cm-small">True Negative</div>
+            <div class="cm-tooltip">✅ Correctly predicted NEGATIVE<br>Healthy predicted as Healthy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOPICS GRID -->
+  <section class="topics-section">
+    <div class="topics-inner">
+      <div class="section-label">Coverage</div>
+      <div class="section-title">What We'll Cover</div>
+      <div class="topics-grid">
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#7c3aed,#ec4899)" onclick="showPage('accuracy')">
+          <div class="tc-icon">🎯</div>
+          <div class="tc-title">Accuracy & Its Limits</div>
+          <div class="tc-desc">When 99% accuracy means your model is broken. The imbalanced dataset problem explained with real examples.</div>
+          <div class="tc-tags"><span class="tc-tag">TP</span><span class="tc-tag">TN</span><span class="tc-tag">Imbalance</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#ec4899,#06b6d4)" onclick="showPage('precision-recall')">
+          <div class="tc-icon">🔬</div>
+          <div class="tc-title">Precision & Recall</div>
+          <div class="tc-desc">The fundamental trade-off. Spam filters vs cancer detectors — when to prioritise which metric.</div>
+          <div class="tc-tags"><span class="tc-tag">Precision</span><span class="tc-tag">Recall</span><span class="tc-tag">Trade-off</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#06b6d4,#10b981)" onclick="showPage('f1')">
+          <div class="tc-icon">⚖️</div>
+          <div class="tc-title">F1 Score</div>
+          <div class="tc-desc">The harmonic mean that balances precision and recall. Why we can't just average them.</div>
+          <div class="tc-tags"><span class="tc-tag">F1</span><span class="tc-tag">Harmonic</span><span class="tc-tag">Balance</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#f59e0b,#10b981)" onclick="showPage('report')">
+          <div class="tc-icon">📊</div>
+          <div class="tc-title">Classification Report</div>
+          <div class="tc-desc">Micro vs Macro vs Weighted averages. What "support" means and why it matters.</div>
+          <div class="tc-tags"><span class="tc-tag">Macro</span><span class="tc-tag">Micro</span><span class="tc-tag">Weighted</span><span class="tc-tag">Support</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#ef4444,#f59e0b)" onclick="showPage('auc')">
+          <div class="tc-icon">📈</div>
+          <div class="tc-title">AUC-ROC Curve</div>
+          <div class="tc-desc">Threshold-independent evaluation. TPR vs FPR, AUC interpretation, and the random classifier baseline.</div>
+          <div class="tc-tags"><span class="tc-tag">AUC</span><span class="tc-tag">ROC</span><span class="tc-tag">TPR</span><span class="tc-tag">FPR</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+        <div class="topic-card" style="--tc-color:linear-gradient(90deg,#7c3aed,#06b6d4)" onclick="showPage('quiz')">
+          <div class="tc-icon">🎮</div>
+          <div class="tc-title">Interactive Quiz</div>
+          <div class="tc-desc">Test your understanding with scenario-based questions covering all the metrics in this session.</div>
+          <div class="tc-tags"><span class="tc-tag">Quiz</span><span class="tc-tag">Scenarios</span><span class="tc-tag">Practice</span></div>
+          <div class="tc-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+</div>
+
+<!-- ═══════════════════════════════ ACCURACY PAGE ═══════════════ -->
+<div id="page-accuracy" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Module 01 — The Great Accuracy Scam</div>
+      <h1>🎯 Accuracy — The Lying Metric</h1>
+      <p>The most intuitive metric that can completely mislead you when classes are imbalanced.</p>
+    </div>
+
+    <!-- ACTIVITY: THE SCAM -->
+    <div style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(236,72,153,0.05));border:1px solid rgba(124,58,237,0.25);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <span style="font-size:22px;">🎭</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent2);">Class Activity — The Fraud Detection Reveal</span>
+      </div>
+      <p style="color:var(--text2);margin-bottom:20px;font-size:14px;line-height:1.8;">A model was trained on 100 transactions. Here's what it predicted:</p>
+
+      <!-- The table of predictions -->
+      <div style="overflow-x:auto;margin-bottom:24px;">
+        <table style="border-collapse:collapse;font-family:'Fira Code',monospace;font-size:14px;width:100%;max-width:500px;">
+          <thead>
+            <tr>
+              <th style="padding:10px 20px;background:var(--bg3);border-bottom:2px solid var(--border);text-align:left;color:var(--text3);font-size:11px;letter-spacing:1px;">ACTUAL</th>
+              <th style="padding:10px 20px;background:var(--bg3);border-bottom:2px solid var(--border);text-align:left;color:var(--text3);font-size:11px;letter-spacing:1px;">PREDICTED</th>
+              <th style="padding:10px 20px;background:var(--bg3);border-bottom:2px solid var(--border);text-align:center;color:var(--text3);font-size:11px;letter-spacing:1px;">COUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:10px 20px;border-bottom:1px solid var(--border);color:var(--accent4)">No Fraud</td><td style="padding:10px 20px;border-bottom:1px solid var(--border);color:var(--accent4)">No Fraud</td><td style="padding:10px 20px;border-bottom:1px solid var(--border);text-align:center;color:var(--accent4);font-weight:500">95</td></tr>
+            <tr><td style="padding:10px 20px;border-bottom:1px solid var(--border);color:var(--accent5)">Fraud</td><td style="padding:10px 20px;border-bottom:1px solid var(--border);color:var(--accent3)">No Fraud</td><td style="padding:10px 20px;border-bottom:1px solid var(--border);text-align:center;color:var(--accent5);font-weight:500">5</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Step-by-step reveal -->
+      <div id="scam-step" style="0">
+        <div id="scam-q1" style="margin-bottom:16px;">
+          <p style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:500;margin-bottom:12px;">Step 1 — What is the accuracy of this model?</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;" id="scam-opts-1">
+            <button onclick="scamAnswer(1,'a')" style="padding:10px 24px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent1)'" onmouseout="this.style.borderColor='var(--border)'">80%</button>
+            <button onclick="scamAnswer(1,'b')" style="padding:10px 24px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent1)'" onmouseout="this.style.borderColor='var(--border)'">95%  ← pick this</button>
+            <button onclick="scamAnswer(1,'c')" style="padding:10px 24px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent1)'" onmouseout="this.style.borderColor='var(--border)'">50%</button>
+          </div>
+        </div>
+        <div id="scam-reveal1" style="display:none;margin-top:16px;">
+          <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+            <span style="color:var(--accent4);font-weight:500;">✅ Correct! Accuracy = 95/100 = 95%</span><br>
+            <span style="color:var(--text2);font-size:14px;">95 correct predictions out of 100. Looks like a great model!</span>
+          </div>
+          <p style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:500;margin-bottom:12px;">Step 2 — Would you deploy this fraud detection model in production?</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onclick="scamAnswer(2,'yes')" style="padding:10px 24px;border-radius:10px;border:1px solid rgba(16,185,129,0.4);background:rgba(16,185,129,0.1);color:var(--accent4);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">👍 Yes, deploy it!</button>
+            <button onclick="scamAnswer(2,'no')" style="padding:10px 24px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.1);color:var(--accent5);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">👎 No, something's off</button>
+          </div>
+        </div>
+        <div id="scam-reveal2" style="display:none;margin-top:16px;">
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:16px;padding:24px;">
+            <div style="font-size:28px;margin-bottom:8px;">🚨</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent5);margin-bottom:12px;">The Reveal — This model is completely useless!</div>
+            <p style="color:var(--text2);line-height:1.8;font-size:14px;">The model predicted <strong style="color:var(--text)">"No Fraud"</strong> for <em>every single transaction</em>. It never detected even one fraud case.</p>
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:500;color:var(--accent4)">95%</div>
+                <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:'Fira Code',monospace">Accuracy ← Looks great</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:500;color:var(--accent5)">0%</div>
+                <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:'Fira Code',monospace">Recall ← The truth</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;padding:12px 16px;background:rgba(245,158,11,0.1);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3)">💡 Key Message:</strong><span style="color:var(--text2);font-size:14px;"> Accuracy can lie when classes are imbalanced. This is why we need Precision, Recall, F1 and AUC-ROC.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <div class="f-main">Accuracy = <span class="highlight">(TP + TN)</span> / (TP + TN + FP + FN)</div>
+      <div class="f-note">= Correct Predictions / Total Predictions</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>✅ When Accuracy Works</h3>
+        <p>When your dataset is <strong>balanced</strong> — roughly equal samples in each class. Example: classifying handwritten digits (0-9) with equal training examples.</p>
+      </div>
+      <div class="info-card">
+        <h3>❌ When Accuracy Fails</h3>
+        <p>When one class <strong>dominates</strong> the dataset. A model predicting "No Cancer" for everyone gets 99% accuracy on a dataset with only 1% cancer patients.</p>
+      </div>
+      <div class="info-card">
+        <h3>🔑 The Dumb Baseline</h3>
+        <p>Always compare against the <strong>"majority class baseline"</strong>. If predicting the most common class gives 90% accuracy, your model needs to beat that meaningfully.</p>
+      </div>
+    </div>
+
+    <!-- Interactive live accuracy calc -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin:24px 0;">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:500;margin-bottom:20px;">🧮 Live Accuracy Calculator</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-family:'Fira Code',monospace;display:block;margin-bottom:6px;">TP (True Pos)</label>
+          <input type="number" id="acc-tp" value="85" oninput="calcAccuracy()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'Fira Code',monospace;font-size:16px;">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-family:'Fira Code',monospace;display:block;margin-bottom:6px;">TN (True Neg)</label>
+          <input type="number" id="acc-tn" value="810" oninput="calcAccuracy()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'Fira Code',monospace;font-size:16px;">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-family:'Fira Code',monospace;display:block;margin-bottom:6px;">FP (False Pos)</label>
+          <input type="number" id="acc-fp" value="15" oninput="calcAccuracy()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'Fira Code',monospace;font-size:16px;">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-family:'Fira Code',monospace;display:block;margin-bottom:6px;">FN (False Neg)</label>
+          <input type="number" id="acc-fn" value="90" oninput="calcAccuracy()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'Fira Code',monospace;font-size:16px;">
+        </div>
+      </div>
+      <div id="acc-result" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="quiz-section" id="acc-quiz"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PRECISION & RECALL ═══════════════ -->
+<div id="page-precision-recall" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Module 02 — Confusion Matrix Detective Game</div>
+      <h1>🔬 Precision & Recall</h1>
+      <p>Two metrics that tell you <em>what kind</em> of mistakes your model makes — before you even see a formula.</p>
+    </div>
+
+    <!-- DETECTIVE GAME -->
+    <div style="background:linear-gradient(135deg,rgba(236,72,153,0.07),rgba(6,182,212,0.05));border:1px solid rgba(236,72,153,0.2);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:22px;">🕵️</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent6);">Confusion Matrix Detective Game</span>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">Think through which mistake is worse — <em>before</em> we introduce the formulas.</p>
+
+      <!-- Scenario A: Cancer -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:16px;margin-bottom:4px;">🏥 Scenario A — Cancer Detection</div>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">A model screens patients for cancer. It can make two kinds of mistakes:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="padding:16px;border-radius:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);cursor:pointer;transition:all 0.2s;" id="ca-opt1" onclick="detectiveAnswer('ca',1)">
+            <div style="font-size:18px;margin-bottom:6px;">😰</div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Mistake A</div>
+            <div style="font-size:13px;color:var(--text2);">Predict cancer when patient <strong>doesn't</strong> have it (False Positive)</div>
+          </div>
+          <div style="padding:16px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);cursor:pointer;transition:all 0.2s;" id="ca-opt2" onclick="detectiveAnswer('ca',2)">
+            <div style="font-size:18px;margin-bottom:6px;">💀</div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Mistake B</div>
+            <div style="font-size:13px;color:var(--text2);">Predict no cancer when patient <strong>actually has</strong> it (False Negative)</div>
+          </div>
+        </div>
+        <div id="ca-reveal" style="display:none;padding:14px 18px;border-radius:10px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);">
+          <strong style="color:var(--accent2);">✅ Mistake B is far worse!</strong><br>
+          <span style="font-size:13px;color:var(--text2);">Missing a real cancer patient (FN) can be fatal. A false alarm (FP) just means an extra test. This is why we use <strong style="color:var(--accent2)">Recall</strong> — catching all real positives matters most.</span>
+        </div>
+      </div>
+
+      <!-- Scenario B: Spam -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:16px;margin-bottom:4px;">📧 Scenario B — Spam Detection</div>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">A spam filter marks emails as spam. Which mistake hurts more?</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="padding:16px;border-radius:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);cursor:pointer;transition:all 0.2s;" id="sb-opt1" onclick="detectiveAnswer('sb',1)">
+            <div style="font-size:18px;margin-bottom:6px;">😤</div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Mistake A</div>
+            <div style="font-size:13px;color:var(--text2);">Spam goes to inbox (False Negative)</div>
+          </div>
+          <div style="padding:16px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);cursor:pointer;transition:all 0.2s;" id="sb-opt2" onclick="detectiveAnswer('sb',2)">
+            <div style="font-size:18px;margin-bottom:6px;">😱</div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Mistake B</div>
+            <div style="font-size:13px;color:var(--text2);">Important client email goes to spam (False Positive)</div>
+          </div>
+        </div>
+        <div id="sb-reveal" style="display:none;padding:14px 18px;border-radius:10px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);">
+          <strong style="color:var(--accent1);">✅ Mistake B is worse!</strong><br>
+          <span style="font-size:13px;color:var(--text2);">Letting some spam through is annoying. Blocking a client's email can cost a deal. So we maximise <strong style="color:var(--accent6)">Precision</strong> — only flag something as spam when we're very confident.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULAS (natural intro after detective game) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+      <div>
+        <div class="formula-box" style="border-left:3px solid var(--accent6);">
+          <div class="f-main">Precision = <span class="highlight">TP</span> / (TP + FP)</div>
+          <div class="f-note">Out of all PREDICTED positives, how many were actually positive?</div>
+        </div>
+        <div class="alert-box alert-info">
+          <span class="alert-icon">💡</span>
+          <div class="alert-text"><strong>Think:</strong> When I cry wolf, how often is there actually a wolf? High precision = low false alarms.</div>
+        </div>
+      </div>
+      <div>
+        <div class="formula-box" style="border-left:3px solid var(--accent2);">
+          <div class="f-main">Recall = <span class="highlight">TP</span> / (TP + FN)</div>
+          <div class="f-note">Out of all ACTUAL positives, how many did we catch?</div>
+        </div>
+        <div class="alert-box alert-info">
+          <span class="alert-icon">💡</span>
+          <div class="alert-text"><strong>Think:</strong> Out of all actual wolves, how many did I detect? High recall = miss nothing.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BATTLE TABLE -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:28px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;margin-bottom:6px;">⚔️ Precision vs Recall Battle — Real-Life Use Cases</div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px;">For each use case, tap your answer — Precision or Recall?</p>
+      <div id="battle-table" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="battle-score" style="margin-top:20px;display:none;padding:16px;border-radius:12px;background:var(--bg2);text-align:center;font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;"></div>
+    </div>
+
+    <!-- TRADE-OFF SLIDER -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:28px;">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:500;margin-bottom:8px;">📊 The Precision-Recall Trade-off</h3>
+      <p style="color:var(--text2);margin-bottom:20px;font-size:14px;">As you increase the decision threshold, precision goes up but recall goes down. Move the slider:</p>
+      <input type="range" class="threshold-slider" id="pr-threshold" min="1" max="9" value="5" oninput="updatePRTradeoff()">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:'Fira Code',monospace;margin-top:-8px;margin-bottom:20px;"><span>Low threshold — catch everything</span><span>High threshold — only sure bets</span></div>
+      <div class="threshold-results">
+        <div class="tr-card"><div class="tr-val" id="pr-prec-val" style="color:var(--accent6)">0.50</div><div class="tr-name">Precision</div></div>
+        <div class="tr-card"><div class="tr-val" id="pr-rec-val" style="color:var(--accent2)">0.90</div><div class="tr-name">Recall</div></div>
+        <div class="tr-card"><div class="tr-val" id="pr-f1-val" style="color:var(--accent4)">0.64</div><div class="tr-name">F1 Score</div></div>
+      </div>
+      <div id="pr-advice" style="margin-top:16px;padding:12px 16px;border-radius:8px;font-size:13px;color:var(--text2);background:var(--bg3);"></div>
+    </div>
+
+    <div class="quiz-section" id="pr-quiz"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ F1 PAGE ═══════════════════════ -->
+<div id="page-f1" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Module 03 — The Marriage Counselor</div>
+      <h1>⚖️ F1 Score — The Balancer</h1>
+      <p>The harmonic mean of Precision and Recall. Why balance matters more than extremes.</p>
+    </div>
+
+    <!-- TWO MODELS CHALLENGE -->
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(6,182,212,0.05));border:1px solid rgba(16,185,129,0.2);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:22px;">🤔</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent4);">Which Model is Better?</span>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">Two models, same problem. Think before you answer.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div style="background:var(--card);border:2px solid var(--border);border-radius:16px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;" id="f1-pick-a" onclick="f1Pick('A')">
+          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;color:var(--accent2);margin-bottom:16px;">Model A</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;"><span style="color:var(--text3);font-size:12px;font-family:'Fira Code',monospace">Precision</span><br><span style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:500;color:var(--accent4)">1.0</span></div>
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;"><span style="color:var(--text3);font-size:12px;font-family:'Fira Code',monospace">Recall</span><br><span style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:500;color:var(--accent5)">0.1</span></div>
+          </div>
+        </div>
+        <div style="background:var(--card);border:2px solid var(--border);border-radius:16px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;" id="f1-pick-b" onclick="f1Pick('B')">
+          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;color:var(--accent6);margin-bottom:16px;">Model B</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;"><span style="color:var(--text3);font-size:12px;font-family:'Fira Code',monospace">Precision</span><br><span style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:500;color:var(--accent4)">0.75</span></div>
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;"><span style="color:var(--text3);font-size:12px;font-family:'Fira Code',monospace">Recall</span><br><span style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:500;color:var(--accent4)">0.75</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="f1-pick-reveal" style="display:none;">
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:22px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:500;color:var(--accent4);margin-bottom:12px;">🎯 Model B wins — here's why:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:12px;color:var(--text3);margin-bottom:4px;font-family:'Fira Code',monospace">Model A — F1</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:30px;font-weight:500;color:var(--accent5)">0.18</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">2×(1.0×0.1)/(1.0+0.1)</div>
+            </div>
+            <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:12px;color:var(--text3);margin-bottom:4px;font-family:'Fira Code',monospace">Model B — F1</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:30px;font-weight:500;color:var(--accent4)">0.75</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">2×(0.75×0.75)/(0.75+0.75)</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;background:rgba(245,158,11,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3)">🎓 Analogy:</strong> <span style="font-size:14px;color:var(--text2);">A student scoring 100 in Maths and 10 in Science isn't an overall topper. F1 rewards balance — not extremes.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+      <div class="formula-box">
+        <div class="f-main">F1 = 2 × <span class="highlight">(P × R)</span> / (P + R)</div>
+        <div class="f-note">Harmonic Mean of Precision and Recall</div>
+      </div>
+      <div class="formula-box" style="background:rgba(239,68,68,0.05);border-color:rgba(239,68,68,0.2);">
+        <div class="f-main" style="text-decoration:line-through;opacity:0.5">F1 ≠ (P + R) / 2</div>
+        <div class="f-note" style="color:var(--accent5)">⚠️ Wrong! Arithmetic mean hides extreme values</div>
+      </div>
+    </div>
+
+    <!-- WHY NOT AVERAGE -->
+    <div class="scenario-box" style="margin-bottom:24px;">
+      <div class="scenario-title">🤔 Why Not Just Average?</div>
+      <p>Model A: Precision = <strong>1.0</strong>, Recall = <strong>0.0</strong> → Arithmetic Mean = <strong>0.5</strong> ← Looks decent!</p>
+      <p style="margin-top:8px;">But this model <strong>catches nothing</strong>. It's useless! F1 = 0.0 correctly exposes this.</p>
+      <p style="margin-top:8px;"><strong>Harmonic mean punishes extremes</strong> — if either P or R is near 0, F1 collapses toward 0 automatically.</p>
+    </div>
+
+    <!-- F1 Interactive Calculator -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin:24px 0;">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:500;margin-bottom:20px;">🧮 F1 Score Live Calculator</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">Precision: <span id="f1-p-label">0.80</span></label>
+          <input type="range" class="threshold-slider" id="f1-precision" min="0" max="100" value="80" oninput="calcF1()">
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">Recall: <span id="f1-r-label">0.60</span></label>
+          <input type="range" class="threshold-slider" id="f1-recall" min="0" max="100" value="60" oninput="calcF1()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div class="tr-card"><div class="tr-val" id="f1-arith" style="color:var(--accent3)">0.70</div><div class="tr-name">Arith. Mean ❌</div></div>
+        <div class="tr-card"><div class="tr-val" id="f1-harm" style="color:var(--accent4)">0.69</div><div class="tr-name">F1 (Harmonic) ✓</div></div>
+        <div class="tr-card"><div class="tr-val" id="f1-diff" style="color:var(--accent6)">-0.01</div><div class="tr-name">Difference</div></div>
+      </div>
+      <div id="f1-warning" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- F1 Interpretation -->
+    <div class="info-grid">
+      <div class="info-card">
+        <h3 style="color:var(--accent5)">😨 F1 &lt; 0.5</h3>
+        <p>Poor model. Either Precision or Recall (or both) are very low. Revisit your data, features, or model.</p>
+      </div>
+      <div class="info-card">
+        <h3 style="color:var(--accent3)">😐 F1 = 0.5–0.7</h3>
+        <p>Moderate. Acceptable in some use cases but there's room to improve. Check for class imbalance.</p>
+      </div>
+      <div class="info-card">
+        <h3 style="color:var(--accent4)">😊 F1 &gt; 0.7</h3>
+        <p>Good to excellent. F1 &gt; 0.9 is great for most tasks. Always compare against your baseline.</p>
+      </div>
+    </div>
+
+    <div class="quiz-section" id="f1-quiz"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ CLASSIFICATION REPORT ══════════════ -->
+<div id="page-report" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Module 04 — Classification Report Mystery</div>
+      <h1>📊 Classification Report Deep Dive</h1>
+      <p>Read a real report, spot what's misleading, understand Macro vs Micro vs Weighted averages.</p>
+    </div>
+
+    <!-- THE MYSTERY REPORT -->
+    <div style="background:linear-gradient(135deg,rgba(245,158,11,0.07),rgba(16,185,129,0.05));border:1px solid rgba(245,158,11,0.2);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:22px;">🔍</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent3);">The Mystery Report — What's Really Happening?</span>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px;">Study this real classification report output. Then answer the detective questions below.</p>
+
+      <div style="background:var(--bg);border-radius:14px;padding:20px;font-family:'Fira Code',monospace;font-size:13px;overflow-x:auto;margin-bottom:24px;border:1px solid var(--border);">
+        <div style="color:var(--text3);margin-bottom:12px;font-size:11px;letter-spacing:1px;">classification_report(y_true, y_pred)</div>
+        <table style="border-collapse:collapse;width:100%;table-layout:fixed;">
+          <colgroup>
+            <col style="width:30%">
+            <col style="width:17.5%">
+            <col style="width:17.5%">
+            <col style="width:17.5%">
+            <col style="width:17.5%">
+          </colgroup>
+          <tr style="color:var(--text3);font-size:11px;letter-spacing:0.5px;">
+            <td style="padding:6px 8px 10px 0;"></td>
+            <td style="padding:6px 8px 10px;text-align:right">precision</td>
+            <td style="padding:6px 8px 10px;text-align:right">recall</td>
+            <td style="padding:6px 8px 10px;text-align:right">f1-score</td>
+            <td style="padding:6px 0 10px 8px;text-align:right;color:var(--accent3)">support</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 8px 6px 0;color:var(--text2)">Class 0</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent4)">0.97</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent4)">0.99</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent4)">0.98</td>
+            <td style="padding:6px 0 6px 8px;text-align:right;color:var(--accent3)">950</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 8px 6px 0;color:var(--text2)">Class 1</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent5)">0.60</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent5)">0.30</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent5)">0.40</td>
+            <td style="padding:6px 0 6px 8px;text-align:right;color:var(--accent3)">50</td>
+          </tr>
+          <tr><td colspan="5" style="padding:6px 0;border-top:1px solid var(--border);"></td></tr>
+          <tr style="background:rgba(6,182,212,0.06);">
+            <td style="padding:6px 8px 6px 0;color:var(--text3)">accuracy</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--text3)"></td>
+            <td style="padding:6px 8px;text-align:right;color:var(--text3)"></td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent2);font-weight:500">0.96</td>
+            <td style="padding:6px 0 6px 8px;text-align:right;color:var(--accent3)">1000</td>
+          </tr>
+          <tr style="background:rgba(124,58,237,0.06);">
+            <td style="padding:6px 8px 6px 0;color:var(--text3)">macro avg</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent1)">0.79</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent1)">0.65</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent1)">0.69</td>
+            <td style="padding:6px 0 6px 8px;text-align:right;color:var(--accent3)">1000</td>
+          </tr>
+          <tr style="background:rgba(236,72,153,0.06);">
+            <td style="padding:6px 8px 6px 0;color:var(--text3)">weighted avg</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent6)">0.95</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent6)">0.96</td>
+            <td style="padding:6px 8px;text-align:right;color:var(--accent6)">0.95</td>
+            <td style="padding:6px 0 6px 8px;text-align:right;color:var(--accent3)">1000</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- 3 discussion questions -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <button onclick="toggleMystery('m1')" style="width:100%;padding:16px 20px;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;justify-content:space-between;align-items:center;">
+            <span>❓ Q1 — Accuracy is 96%. Is this a good model?</span><span id="m1-arr" style="color:var(--accent2);font-size:18px;">+</span>
+          </button>
+          <div id="m1" style="display:none;padding:0 20px 18px;color:var(--text2);font-size:14px;line-height:1.8;border-top:1px solid var(--border);">
+            <br><strong style="color:var(--accent5)">No — it's deceiving you.</strong> The model barely ever sees Class 1 (only 50 out of 1000). It learned to mostly predict Class 0 and gets rewarded by accuracy. Class 1 recall is only 0.30 — it misses 70% of minority class cases. If Class 1 is fraud or disease, that's a disaster.
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <button onclick="toggleMystery('m2')" style="width:100%;padding:16px 20px;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;justify-content:space-between;align-items:center;">
+            <span>❓ Q2 — Why is Macro Avg low (F1 = 0.69)?</span><span id="m2-arr" style="color:var(--accent2);font-size:18px;">+</span>
+          </button>
+          <div id="m2" style="display:none;padding:0 20px 18px;color:var(--text2);font-size:14px;line-height:1.8;border-top:1px solid var(--border);">
+            <br>Macro Average gives <strong style="color:var(--text)">equal weight to both classes</strong>. Class 0 F1 = 0.98, Class 1 F1 = 0.40. Average = (0.98 + 0.40) / 2 = <strong style="color:var(--accent1)">0.69</strong>. Macro is honest — it exposes that one class performs terribly.
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+          <button onclick="toggleMystery('m3')" style="width:100%;padding:16px 20px;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;justify-content:space-between;align-items:center;">
+            <span>❓ Q3 — Why is Weighted Avg high (F1 = 0.95)?</span><span id="m3-arr" style="color:var(--accent2);font-size:18px;">+</span>
+          </button>
+          <div id="m3" style="display:none;padding:0 20px 18px;color:var(--text2);font-size:14px;line-height:1.8;border-top:1px solid var(--border);">
+            <br>Weighted Average multiplies each class F1 by its support: <strong style="color:var(--text)">(950 × 0.98 + 50 × 0.40) / 1000 = 0.95</strong>. Class 0 has 950 samples and dominates the average. Weighted avg is inflated by the majority class — it hides minority class failure.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT IS SUPPORT -->
+    <div class="info-card" style="margin-bottom:24px;border-left:3px solid var(--accent3);">
+      <h3>📌 What is "Support"?</h3>
+      <p>Support = the <strong>number of actual samples in that class</strong> in the test set. It's your sample size per class. Low support means less trustworthy metrics — Class 1 with only 50 samples gives us less confidence than Class 0 with 950.</p>
+    </div>
+
+    <!-- CLASSROOM ANALOGY -->
+    <div style="background:linear-gradient(135deg,rgba(124,58,237,0.07),rgba(6,182,212,0.05));border:1px solid rgba(124,58,237,0.2);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;margin-bottom:6px;">🏫 Classroom Analogy — Macro vs Micro vs Weighted</div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px;">Imagine two sections. <strong style="color:var(--text)">Class A = 900 students</strong>, <strong style="color:var(--text)">Class B = 100 students</strong>. The model performs: Class A → 95%, Class B → 50%.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+        <div style="background:var(--card);border:1px solid rgba(124,58,237,0.3);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px;">⚖️</div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent1);margin-bottom:8px;">Macro Average</div>
+          <div style="font-family:'Fira Code',monospace;font-size:13px;color:var(--text2);margin-bottom:10px;">(95 + 50) / 2 = <strong style="color:var(--accent1)">72.5%</strong></div>
+          <div style="font-size:12px;color:var(--text3)">Every class gets equal vote</div>
+        </div>
+        <div style="background:var(--card);border:1px solid rgba(6,182,212,0.3);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px;">📊</div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent2);margin-bottom:8px;">Weighted Average</div>
+          <div style="font-family:'Fira Code',monospace;font-size:13px;color:var(--text2);margin-bottom:10px;">(900×95 + 100×50)/1000 = <strong style="color:var(--accent2)">90.5%</strong></div>
+          <div style="font-size:12px;color:var(--text3)">Bigger class gets more votes</div>
+        </div>
+        <div style="background:var(--card);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:24px;margin-bottom:8px;">🌍</div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent4);margin-bottom:8px;">Micro Average</div>
+          <div style="font-family:'Fira Code',monospace;font-size:13px;color:var(--text2);margin-bottom:10px;">Pool all TP/FP/FN globally</div>
+          <div style="font-size:12px;color:var(--text3)">Entire population votes together</div>
+        </div>
+      </div>
+
+      <!-- Easy memory trick table -->
+      <div style="background:var(--bg);border-radius:12px;padding:20px;border:1px solid var(--border);">
+        <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;margin-bottom:14px;color:var(--accent3);">🧠 Easy Memory Trick</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">AVERAGE</th>
+            <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">THINK OF IT AS…</th>
+            <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">USE WHEN…</th>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;"><span style="background:rgba(124,58,237,0.15);color:var(--accent1);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Macro</span></td>
+            <td style="padding:10px 14px;color:var(--text2)">Every class gets equal vote</td>
+            <td style="padding:10px 14px;color:var(--text2)">Minority classes matter equally</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 14px;"><span style="background:rgba(6,182,212,0.15);color:var(--accent2);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Weighted</span></td>
+            <td style="padding:10px 14px;color:var(--text2)">Bigger classes get more votes</td>
+            <td style="padding:10px 14px;color:var(--text2)">Imbalanced datasets</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;"><span style="background:rgba(16,185,129,0.15);color:var(--accent4);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Micro</span></td>
+            <td style="padding:10px 14px;color:var(--text2)">Entire population votes together</td>
+            <td style="padding:10px 14px;color:var(--text2)">Overall system performance</td>
+          </tr>
+        </table>
+        <div style="margin-top:14px;padding:12px 16px;background:rgba(245,158,11,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+          <strong style="color:var(--accent3)">❓ Which average reveals minority class problems?</strong><br>
+          <span style="color:var(--text2);font-size:14px;">→ <strong style="color:var(--text)">Macro Average</strong> — because it gives equal weight to the struggling minority class, pulling the overall score down.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="quiz-section" id="report-quiz"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ AUC-ROC PAGE ═══════════════ -->
+<div id="page-auc" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Module 05 — ROC-AUC Interactive Story</div>
+      <h1>📈 AUC-ROC Curve</h1>
+      <p>Most people memorise ROC but never truly understand it. Let's fix that with a story.</p>
+    </div>
+
+    <!-- THE THRESHOLD STORY -->
+    <div style="background:linear-gradient(135deg,rgba(239,68,68,0.07),rgba(245,158,11,0.05));border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:32px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:22px;">🏥</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;color:var(--accent5);">Cancer Prediction — The Threshold Problem</span>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px;">Your model outputs a probability score for each patient. Here's what it says:</p>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;" id="patient-cards"></div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">At what probability threshold should we classify a patient as <strong style="color:var(--accent5)">Cancer Positive</strong>?</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <button onclick="setThresholdStory(0.5)" id="ts-05" style="padding:10px 20px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Fira Code',monospace;font-size:14px;transition:all 0.2s;">Threshold = 0.5</button>
+        <button onclick="setThresholdStory(0.7)" id="ts-07" style="padding:10px 20px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Fira Code',monospace;font-size:14px;transition:all 0.2s;">Threshold = 0.7</button>
+        <button onclick="setThresholdStory(0.9)" id="ts-09" style="padding:10px 20px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Fira Code',monospace;font-size:14px;transition:all 0.2s;">Threshold = 0.9</button>
+      </div>
+      <div id="ts-result" style="display:none;padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.7;"></div>
+      <div style="margin-top:16px;padding:14px 18px;border-radius:10px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);">
+        <strong style="color:var(--accent2)">💡 The ROC insight:</strong> <span style="color:var(--text2);font-size:14px;">There is no single "right" threshold. ROC Curve = performance of the model across <em>all</em> thresholds at once.</span>
+      </div>
+    </div>
+
+    <div class="info-grid" style="margin-bottom:24px;">
+      <div class="info-card">
+        <h3>📡 TPR (Sensitivity / Recall)</h3>
+        <p><code style="font-family:'Fira Code',monospace;font-size:12px">TP / (TP + FN)</code> — Out of all actual positives, how many did we correctly catch? Y-axis of the ROC curve.</p>
+      </div>
+      <div class="info-card">
+        <h3>🚨 FPR (1 − Specificity)</h3>
+        <p><code style="font-family:'Fira Code',monospace;font-size:12px">FP / (FP + TN)</code> — Out of all actual negatives, how many did we wrongly flag? X-axis of the ROC curve.</p>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:24px;">
+      <h3 style="font-family:'Outfit',sans-serif;font-weight:500;margin-bottom:8px;">Interactive ROC Curve</h3>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px;">Move the threshold slider to see how TPR and FPR change:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+        <div><canvas id="roc-canvas" width="350" height="350"></canvas></div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">Threshold: <span id="roc-thresh-label">0.50</span></label>
+          <input type="range" class="threshold-slider" id="roc-threshold" min="0" max="100" value="50" oninput="updateROC()">
+          <div class="threshold-results" style="margin-top:20px;">
+            <div class="tr-card"><div class="tr-val" id="roc-tpr" style="color:var(--accent4)">0.80</div><div class="tr-name">TPR (Recall)</div></div>
+            <div class="tr-card"><div class="tr-val" id="roc-fpr" style="color:var(--accent5)">0.20</div><div class="tr-name">FPR</div></div>
+            <div class="tr-card"><div class="tr-val" id="roc-auc-score" style="color:var(--accent2)">0.85</div><div class="tr-name">AUC Score</div></div>
+          </div>
+          <div id="roc-interp" style="margin-top:16px;padding:14px;border-radius:10px;background:var(--bg3);font-size:13px;color:var(--text2);line-height:1.6;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:18px;margin-bottom:12px;">AUC Score — What Does It Mean?</div>
+    <div style="margin-bottom:12px;padding:14px 18px;border-radius:10px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);">
+      <strong style="color:var(--accent2)">🎲 Probabilistic Interpretation:</strong> <span style="color:var(--text2);font-size:14px;">AUC = 0.85 means your model ranks a positive case higher than a negative case <strong style="color:var(--text)">85% of the time</strong>.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--card);border-radius:12px;border:1px solid rgba(239,68,68,0.25)">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px;color:var(--accent5);min-width:50px">0.5</div>
+        <div style="flex:1"><div style="font-weight:500;margin-bottom:3px;">🎲 Random Guess</div><div style="font-size:13px;color:var(--text2)">No better than a coin flip.</div></div>
+        <div style="width:100px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:50%;height:100%;background:var(--accent5);border-radius:3px;"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--card);border-radius:12px;border:1px solid rgba(245,158,11,0.2)">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px;color:var(--accent3);min-width:50px">0.6</div>
+        <div style="flex:1"><div style="font-weight:500;margin-bottom:3px;">😕 Weak</div><div style="font-size:13px;color:var(--text2)">Barely better than random.</div></div>
+        <div style="width:100px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:60%;height:100%;background:var(--accent3);border-radius:3px;"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--card);border-radius:12px;border:1px solid rgba(245,158,11,0.2)">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px;color:var(--accent3);min-width:50px">0.7</div>
+        <div style="flex:1"><div style="font-weight:500;margin-bottom:3px;">😐 Acceptable</div><div style="font-size:13px;color:var(--text2)">Decent. Could be improved.</div></div>
+        <div style="width:100px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:70%;height:100%;background:var(--accent3);border-radius:3px;"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--card);border-radius:12px;border:1px solid rgba(16,185,129,0.2)">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px;color:var(--accent4);min-width:50px">0.8</div>
+        <div style="flex:1"><div style="font-weight:500;margin-bottom:3px;">😊 Good</div><div style="font-size:13px;color:var(--text2)">Strong discriminating ability.</div></div>
+        <div style="width:100px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:80%;height:100%;background:var(--accent4);border-radius:3px;"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--card);border-radius:12px;border:1px solid rgba(6,182,212,0.2)">
+        <div style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px;color:var(--accent2);min-width:50px">0.9+</div>
+        <div style="flex:1"><div style="font-weight:500;margin-bottom:3px;">🏆 Excellent</div><div style="font-size:13px;color:var(--text2)">Outstanding! If 1.0, check for data leakage.</div></div>
+        <div style="width:100px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:90%;height:100%;background:var(--accent2);border-radius:3px;"></div></div>
+      </div>
+    </div>
+
+    <div class="quiz-section" id="auc-quiz"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ PAGE ════════════════════ -->
+<div id="page-quiz" class="page">
+  <div class="content-page">
+    <div class="content-header">
+      <div class="section-label">Grand Finale — Metric Doctor</div>
+      <h1>🩺 Metric Doctor + Master Quiz</h1>
+      <p>Diagnose broken models, spot misleading metrics, and prescribe the right one.</p>
+    </div>
+
+    <!-- METRIC DOCTOR GAME -->
+    <div style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(236,72,153,0.05));border:1px solid rgba(124,58,237,0.25);border-radius:20px;padding:32px;margin-bottom:36px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:28px;">🩺</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:500;color:var(--accent2);">The Metric Doctor Game</span>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">For each patient report below: <strong style="color:var(--text)">(1)</strong> Find the problem. <strong style="color:var(--text)">(2)</strong> Identify the misleading metric. <strong style="color:var(--text)">(3)</strong> Prescribe the correct one.</p>
+      <div id="doctor-cards" style="display:flex;flex-direction:column;gap:16px;"></div>
+    </div>
+
+    <!-- MINI QUIZ: Model comparison -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:28px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;margin-bottom:20px;">⚡ Mini Quiz — Pick the Better Model</div>
+
+      <!-- Q1: Fraud -->
+      <div style="margin-bottom:24px;padding:20px;background:var(--bg2);border-radius:14px;">
+        <div style="font-size:14px;color:var(--accent3);font-family:'Fira Code',monospace;margin-bottom:10px;">SCENARIO: Fraud Detection</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div style="background:var(--bg3);border-radius:10px;padding:14px;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent2);margin-bottom:8px;">Model A</div>
+            <div style="font-size:13px;color:var(--text2)">Accuracy = <strong style="color:var(--text)">98%</strong><br>Recall = <strong style="color:var(--accent5)">10%</strong></div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:14px;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent6);margin-bottom:8px;">Model B</div>
+            <div style="font-size:13px;color:var(--text2)">Accuracy = <strong style="color:var(--text)">93%</strong><br>Recall = <strong style="color:var(--accent4)">90%</strong></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="miniQuiz('mq1','A','B')" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.08);color:var(--accent2);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">Model A</button>
+          <button onclick="miniQuiz('mq1','B','B')" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(236,72,153,0.4);background:rgba(236,72,153,0.08);color:var(--accent6);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">Model B</button>
+        </div>
+        <div id="mq1" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:13px;line-height:1.7;"></div>
+      </div>
+
+      <!-- Q2: F1 -->
+      <div style="padding:20px;background:var(--bg2);border-radius:14px;">
+        <div style="font-size:14px;color:var(--accent3);font-family:'Fira Code',monospace;margin-bottom:10px;">SCENARIO: Which has better F1?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div style="background:var(--bg3);border-radius:10px;padding:14px;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent2);margin-bottom:8px;">Model C</div>
+            <div style="font-size:13px;color:var(--text2)">Precision = <strong style="color:var(--text)">99%</strong><br>Recall = <strong style="color:var(--accent5)">20%</strong></div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:14px;">
+            <div style="font-family:'Outfit',sans-serif;font-weight:500;color:var(--accent6);margin-bottom:8px;">Model D</div>
+            <div style="font-size:13px;color:var(--text2)">Precision = <strong style="color:var(--text)">80%</strong><br>Recall = <strong style="color:var(--text)">80%</strong></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="miniQuiz('mq2','C','D')" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.08);color:var(--accent2);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">Model C</button>
+          <button onclick="miniQuiz('mq2','D','D')" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(236,72,153,0.4);background:rgba(236,72,153,0.08);color:var(--accent6);cursor:pointer;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;">Model D</button>
+        </div>
+        <div id="mq2" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:13px;line-height:1.7;"></div>
+      </div>
+    </div>
+
+    <!-- MASTER CHEAT SHEET -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:28px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:500;margin-bottom:16px;">📋 Metric Cheat Sheet — When to Use What</div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr style="border-bottom:2px solid var(--border);">
+          <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">DOMAIN</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">FOCUS METRIC</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text3);font-size:11px;font-family:'Fira Code',monospace;letter-spacing:1px;">REASON</th>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">🔍 Fraud Detection</td><td style="padding:10px 14px;"><span style="background:rgba(6,182,212,0.15);color:var(--accent2);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Recall</span></td><td style="padding:10px 14px;color:var(--text2)">Missing fraud is costly — catch everything</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">🏥 Cancer Detection</td><td style="padding:10px 14px;"><span style="background:rgba(6,182,212,0.15);color:var(--accent2);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Recall</span></td><td style="padding:10px 14px;color:var(--text2)">Missing a case is life-threatening</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">📧 Spam Detection</td><td style="padding:10px 14px;"><span style="background:rgba(124,58,237,0.15);color:var(--accent1);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Precision</span></td><td style="padding:10px 14px;color:var(--text2)">False positives block real emails</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">🎯 Recommendation</td><td style="padding:10px 14px;"><span style="background:rgba(124,58,237,0.15);color:var(--accent1);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Precision</span></td><td style="padding:10px 14px;color:var(--text2)">Users trust only relevant results</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">🚨 Terrorist Detection</td><td style="padding:10px 14px;"><span style="background:rgba(6,182,212,0.15);color:var(--accent2);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Recall</span></td><td style="padding:10px 14px;color:var(--text2)">Missing one is catastrophic</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">📱 Face Unlock</td><td style="padding:10px 14px;"><span style="background:rgba(124,58,237,0.15);color:var(--accent1);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Precision</span></td><td style="padding:10px 14px;color:var(--text2)">Don't unlock for the wrong face</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 14px;">📉 Customer Churn</td><td style="padding:10px 14px;"><span style="background:rgba(16,185,129,0.15);color:var(--accent4);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">F1 Score</span></td><td style="padding:10px 14px;color:var(--text2)">Both missed churn and false alarms cost money</td></tr>
+        <tr><td style="padding:10px 14px;">📊 Balanced Dataset</td><td style="padding:10px 14px;"><span style="background:rgba(245,158,11,0.15);color:var(--accent3);padding:3px 10px;border-radius:6px;font-family:'Fira Code',monospace;font-size:12px;">Accuracy</span></td><td style="padding:10px 14px;color:var(--text2)">Classes are balanced — accuracy is reliable</td></tr>
+      </table>
+    </div>
+
+    <div id="master-quiz"></div>
+  </div>
+</div>
+
+<script>
+// ─── THEME ─────────────────────────────────────────────────────
+function toggleTheme() {
+  document.body.classList.toggle('light-mode');
+  drawROCCanvas();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  // Sync all nav elements (top nav + bottom nav + drawer) using data-page
+  document.querySelectorAll('[data-page]').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === id);
+  });
+  window.scrollTo(0, 0);
+  if (id === 'auc') { setTimeout(drawROCCanvas, 100); }
+}
+
+// ─── MOBILE DRAWER ────────────────────────────────────────────
+function toggleDrawer() {
+  const drawer = document.getElementById('mobile-drawer');
+  const burger = document.getElementById('hamburger');
+  const open = drawer.classList.toggle('open');
+  burger.classList.toggle('open', open);
+}
+function closeDrawer() {
+  document.getElementById('mobile-drawer').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+}
+// Close drawer when clicking outside
+document.addEventListener('click', function(e) {
+  const drawer = document.getElementById('mobile-drawer');
+  const burger = document.getElementById('hamburger');
+  if (drawer.classList.contains('open') && !drawer.contains(e.target) && !burger.contains(e.target)) {
+    closeDrawer();
+  }
+});
+
+// ─── TABS ─────────────────────────────────────────────────────
+function switchTab(containerId, panelId, btn) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  container.querySelector('#'+panelId).classList.add('active');
+  btn.closest('.tab-bar').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─── ACCURACY SCAM ACTIVITY ────────────────────────────────────
+function scamAnswer(step, ans) {
+  if (step === 1) {
+    document.getElementById('scam-reveal1').style.display = 'block';
+    const btns = document.querySelectorAll('#scam-opts-1 button');
+    btns.forEach(b => b.disabled = true);
+    if (ans === 'b') btns[1].style.background = 'rgba(16,185,129,0.15)';
+  }
+  if (step === 2) {
+    document.getElementById('scam-reveal2').style.display = 'block';
+  }
+}
+
+// ─── DETECTIVE GAME ───────────────────────────────────────────
+function detectiveAnswer(scenario, choice) {
+  if (scenario === 'ca') {
+    document.getElementById('ca-reveal').style.display = 'block';
+    const o1 = document.getElementById('ca-opt1'), o2 = document.getElementById('ca-opt2');
+    if (choice === 2) { o2.style.borderColor = 'var(--accent5)'; o2.style.background = 'rgba(239,68,68,0.12)'; }
+    else { o1.style.borderColor = 'var(--accent3)'; }
+    o1.onclick = null; o2.onclick = null;
+  }
+  if (scenario === 'sb') {
+    document.getElementById('sb-reveal').style.display = 'block';
+    const o1 = document.getElementById('sb-opt1'), o2 = document.getElementById('sb-opt2');
+    if (choice === 2) { o2.style.borderColor = 'var(--accent5)'; o2.style.background = 'rgba(239,68,68,0.12)'; }
+    else { o1.style.borderColor = 'var(--accent3)'; }
+    o1.onclick = null; o2.onclick = null;
+  }
+}
+
+// ─── BATTLE TABLE ─────────────────────────────────────────────
+const battleItems = [
+  { label: '🏥 Cancer Detection', answer: 'Recall', hint: 'Missing a real case is fatal' },
+  { label: '🔍 Fraud Detection', answer: 'Recall', hint: 'Every missed fraud costs money' },
+  { label: '📧 Spam Detection', answer: 'Precision', hint: 'Blocking real emails is worse' },
+  { label: '🎯 Recommendation System', answer: 'Precision', hint: 'Users trust only relevant results' },
+  { label: '🚨 Terrorist Detection', answer: 'Recall', hint: 'Missing one is catastrophic' },
+  { label: '📱 Face Unlock', answer: 'Precision', hint: "Don't unlock for the wrong person" },
+  { label: '💊 Drug Side Effect', answer: 'Recall', hint: 'Missing a side effect is dangerous' },
+  { label: '📰 Fake News Filter', answer: 'Precision', hint: 'Blocking real news is harmful' },
+  { label: '📉 Customer Churn', answer: 'F1', hint: 'Balance matters equally here' },
+  { label: '🌡️ ICU Patient Risk', answer: 'Recall', hint: 'Missing a high-risk patient is critical' },
+];
+let battleScore = 0, battleAnswered = 0;
+function buildBattleTable() {
+  const c = document.getElementById('battle-table');
+  if (!c) return;
+  c.innerHTML = battleItems.map((item, i) => `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;" id="battle-row-${i}">
+      <span style="flex:1;font-size:14px;min-width:160px">${item.label}</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="battlePick(${i},'Precision')" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(124,58,237,0.4);background:rgba(124,58,237,0.08);color:var(--accent1);cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;" id="b-prec-${i}">Precision</button>
+        <button onclick="battlePick(${i},'Recall')" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.08);color:var(--accent2);cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;" id="b-rec-${i}">Recall</button>
+        <button onclick="battlePick(${i},'F1')" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(16,185,129,0.4);background:rgba(16,185,129,0.08);color:var(--accent4);cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;" id="b-f1-${i}">F1</button>
+      </div>
+      <span id="battle-result-${i}" style="font-size:12px;font-family:'Fira Code',monospace;min-width:80px;"></span>
+    </div>
+  `).join('');
+}
+function battlePick(idx, choice) {
+  const item = battleItems[idx];
+  const res = document.getElementById(`battle-result-${idx}`);
+  if (res.textContent) return;
+  const correct = choice === item.answer;
+  if (correct) { battleScore++; res.innerHTML = `<span style="color:var(--accent4)">✅ ${item.answer}</span>`; }
+  else { res.innerHTML = `<span style="color:var(--accent5)">❌ ${item.answer}</span>`; }
+  document.getElementById(`battle-row-${idx}`).title = item.hint;
+  ['Precision','Recall','F1'].forEach(m => {
+    const b = document.getElementById(`b-${m.toLowerCase().replace(' ','')}-${idx}`) || document.getElementById(`b-f1-${idx}`);
+    if (b) b.disabled = true;
+  });
+  document.getElementById(`b-prec-${idx}`).disabled = true;
+  document.getElementById(`b-rec-${idx}`).disabled = true;
+  document.getElementById(`b-f1-${idx}`).disabled = true;
+  battleAnswered++;
+  if (battleAnswered === battleItems.length) {
+    const sc = document.getElementById('battle-score');
+    sc.style.display = 'block';
+    const pct = Math.round(battleScore/battleItems.length*100);
+    sc.innerHTML = `🎯 Score: <strong style="color:var(--accent2)">${battleScore}/${battleItems.length}</strong> — ${pct >= 80 ? '🎉 Excellent!' : pct >= 60 ? '😊 Good effort!' : '📚 Review the cheat sheet!'} <button onclick="resetBattle()" style="margin-left:16px;padding:6px 16px;border-radius:8px;border:1px solid var(--accent1);background:rgba(124,58,237,0.1);color:var(--accent1);cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif">Try Again</button>`;
+  }
+}
+function resetBattle() { battleScore = 0; battleAnswered = 0; document.getElementById('battle-score').style.display='none'; buildBattleTable(); }
+
+// ─── F1 PICK ───────────────────────────────────────────────────
+function f1Pick(model) {
+  document.getElementById('f1-pick-reveal').style.display = 'block';
+  const a = document.getElementById('f1-pick-a'), b = document.getElementById('f1-pick-b');
+  a.style.borderColor = model==='A' ? 'var(--accent5)' : 'var(--border)';
+  b.style.borderColor = 'var(--accent4)';
+  a.onclick = null; b.onclick = null;
+}
+
+// ─── MYSTERY TOGGLES ──────────────────────────────────────────
+function toggleMystery(id) {
+  const el = document.getElementById(id);
+  const arr = document.getElementById(id+'-arr');
+  const visible = el.style.display !== 'none';
+  el.style.display = visible ? 'none' : 'block';
+  arr.textContent = visible ? '+' : '−';
+}
+
+// ─── ACCURACY CALCULATOR ───────────────────────────────────────
+function calcAccuracy() {
+  const tp = +document.getElementById('acc-tp').value || 0;
+  const tn = +document.getElementById('acc-tn').value || 0;
+  const fp = +document.getElementById('acc-fp').value || 0;
+  const fn = +document.getElementById('acc-fn').value || 0;
+  const total = tp+tn+fp+fn;
+  if (!total) return;
+  const acc = (tp+tn)/total;
+  const prec = tp/(tp+fp) || 0;
+  const rec = tp/(tp+fn) || 0;
+  const f1 = (prec+rec) ? 2*prec*rec/(prec+rec) : 0;
+  const res = document.getElementById('acc-result');
+  const colors = ['var(--accent1)','var(--accent2)','var(--accent4)','var(--accent3)'];
+  const labels = ['Accuracy','Precision','Recall','F1 Score'];
+  const vals = [acc,prec,rec,f1];
+  res.innerHTML = vals.map((v,i) => `
+    <div style="flex:1;min-width:120px;background:var(--bg2);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border)">
+      <div style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:500;color:${colors[i]}">${(v*100).toFixed(1)}%</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:'Fira Code',monospace">${labels[i]}</div>
+      <div style="margin-top:8px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;background:${colors[i]};width:${v*100}%;transition:width 0.5s"></div></div>
+    </div>
+  `).join('');
+}
+calcAccuracy();
+
+// ─── PR TRADE-OFF ──────────────────────────────────────────────
+const prData = {
+  prec: [0.35,0.45,0.55,0.65,0.73,0.80,0.88,0.93,0.97],
+  rec:  [0.97,0.93,0.88,0.82,0.75,0.65,0.52,0.38,0.20],
+  advice: [
+    'Very low threshold — catching everything, but lots of false alarms (high recall, low precision)',
+    'Low threshold — most positives caught, many false positives',
+    'Below-average threshold — good recall, moderate precision',
+    'Moderate-low — balanced lean toward recall',
+    'Balanced threshold — best F1, most balanced point',
+    'Moderate-high — leaning toward precision',
+    'High threshold — fewer false positives, missing more positives',
+    'Very high — only very confident predictions flagged',
+    'Maximum threshold — almost nothing flagged, near-zero recall'
+  ]
+};
+function updatePRTradeoff() {
+  const idx = +document.getElementById('pr-threshold').value - 1;
+  const p = prData.prec[idx], r = prData.rec[idx];
+  const f1 = 2*p*r/(p+r);
+  document.getElementById('pr-prec-val').textContent = p.toFixed(2);
+  document.getElementById('pr-rec-val').textContent = r.toFixed(2);
+  document.getElementById('pr-f1-val').textContent = f1.toFixed(2);
+  document.getElementById('pr-advice').textContent = prData.advice[idx];
+}
+updatePRTradeoff();
+
+// ─── F1 CALCULATOR ─────────────────────────────────────────────
+function calcF1() {
+  const p = +document.getElementById('f1-precision').value / 100;
+  const r = +document.getElementById('f1-recall').value / 100;
+  document.getElementById('f1-p-label').textContent = p.toFixed(2);
+  document.getElementById('f1-r-label').textContent = r.toFixed(2);
+  const arith = (p+r)/2;
+  const harm = (p+r) ? 2*p*r/(p+r) : 0;
+  const diff = harm - arith;
+  document.getElementById('f1-arith').textContent = arith.toFixed(2);
+  document.getElementById('f1-harm').textContent = harm.toFixed(2);
+  document.getElementById('f1-diff').textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+  const w = document.getElementById('f1-warning');
+  if (Math.abs(p - r) > 0.4) {
+    w.innerHTML = `<div class="alert-box alert-warn"><span class="alert-icon">⚠️</span><div class="alert-text"><strong>Big gap!</strong> When P and R differ a lot, F1 is much lower than arithmetic mean — exposing the model's weakness.</div></div>`;
+  } else if (harm > 0.8) {
+    w.innerHTML = `<div class="alert-box alert-success"><span class="alert-icon">✅</span><div class="alert-text"><strong>Great F1!</strong> Both precision and recall are high and balanced.</div></div>`;
+  } else { w.innerHTML = ''; }
+}
+calcF1();
+
+// ─── PATIENT CARDS (AUC Story) ─────────────────────────────────
+const patients = [
+  { name:'Patient A', prob:0.95, actual:true },
+  { name:'Patient B', prob:0.90, actual:true },
+  { name:'Patient C', prob:0.80, actual:false },
+  { name:'Patient D', prob:0.40, actual:false },
+  { name:'Patient E', prob:0.10, actual:false },
+];
+function renderPatientCards(threshold) {
+  const c = document.getElementById('patient-cards');
+  if (!c) return;
+  c.innerHTML = patients.map(p => {
+    const flagged = p.prob >= threshold;
+    const correct = (flagged && p.actual) || (!flagged && !p.actual);
+    const color = threshold ? (correct ? 'var(--accent4)' : 'var(--accent5)') : 'var(--text2)';
+    const border = threshold ? (correct ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)') : 'var(--border)';
+    return `<div style="background:var(--bg3);border:1px solid ${border};border-radius:12px;padding:14px;text-align:center;transition:all 0.3s;">
+      <div style="font-size:24px;margin-bottom:6px;">${p.actual ? '🩺' : '😊'}</div>
+      <div style="font-size:12px;font-family:'Fira Code',monospace;color:var(--text3);margin-bottom:4px">${p.name}</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:500;color:${color}">${p.prob}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${p.actual ? 'Has Cancer' : 'Healthy'}</div>
+      ${threshold ? `<div style="font-size:11px;margin-top:6px;color:${color}">${flagged ? '🔴 Flagged' : '🟢 Clear'}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function setThresholdStory(t) {
+  ['ts-05','ts-07','ts-09'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.background = 'var(--bg2)'; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text2)'; }
+  });
+  const btn = document.getElementById(`ts-0${String(t*10).replace('.','')}`);
+  if (btn) { btn.style.background = 'rgba(124,58,237,0.15)'; btn.style.borderColor = 'var(--accent1)'; btn.style.color = 'var(--accent1)'; }
+  renderPatientCards(t);
+  const res = document.getElementById('ts-result');
+  res.style.display = 'block';
+  const flagged = patients.filter(p => p.prob >= t);
+  const tp = flagged.filter(p => p.actual).length;
+  const fp = flagged.filter(p => !p.actual).length;
+  const fn = patients.filter(p => p.prob < t && p.actual).length;
+  const msgs = {
+    0.5: `<strong style="color:var(--accent4)">Threshold 0.5:</strong> Flags ${flagged.length} patients (A,B,C). TP=${tp}, FP=${fp}, FN=${fn}. Good recall but flags one healthy person.`,
+    0.7: `<strong style="color:var(--accent3)">Threshold 0.7:</strong> Flags ${flagged.length} patients (A,B). TP=${tp}, FP=${fp}, FN=${fn}. Perfect precision but misses Patient C slightly.`,
+    0.9: `<strong style="color:var(--accent5)">Threshold 0.9:</strong> Flags only ${flagged.length} patient (A). TP=${tp}, FP=${fp}, FN=${fn}. Very conservative — misses Patient B with 0.90 score!`
+  };
+  res.style.background = 'rgba(124,58,237,0.08)';
+  res.style.border = '1px solid rgba(124,58,237,0.2)';
+  res.style.borderRadius = '10px';
+  res.innerHTML = msgs[t] || '';
+}
+
+// ─── ROC CANVAS ────────────────────────────────────────────────
+const rocPoints = [
+  [0,0],[0.02,0.35],[0.05,0.55],[0.10,0.68],[0.18,0.78],
+  [0.25,0.83],[0.35,0.88],[0.50,0.92],[0.65,0.95],[0.80,0.97],[1,1]
+];
+function drawROCCanvas() {
+  const canvas = document.getElementById('roc-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, pad = 50;
+  const isLight = document.body.classList.contains('light-mode');
+  const textColor = isLight ? '#44445a' : '#9090b0';
+  const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+  const bgColor = isLight ? '#ffffff' : '#16161f';
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = bgColor; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(pad+(W-2*pad)*i/4,pad); ctx.lineTo(pad+(W-2*pad)*i/4,H-pad); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad,pad+(H-2*pad)*i/4); ctx.lineTo(W-pad,pad+(H-2*pad)*i/4); ctx.stroke();
+  }
+  ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,pad); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  rocPoints.forEach(([fx,fy],i) => { const x=pad+fx*(W-2*pad), y=H-pad-fy*(H-2*pad); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.beginPath();
+  rocPoints.forEach(([fx,fy],i) => { const x=pad+fx*(W-2*pad), y=H-pad-fy*(H-2*pad); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.lineTo(W-pad,H-pad); ctx.lineTo(pad,H-pad); ctx.closePath();
+  const grad = ctx.createLinearGradient(0,pad,0,H-pad);
+  grad.addColorStop(0,'rgba(124,58,237,0.3)'); grad.addColorStop(1,'rgba(124,58,237,0)');
+  ctx.fillStyle = grad; ctx.fill();
+  const t = +document.getElementById('roc-threshold').value / 100;
+  const [fx,fy] = rocPoints[Math.round(t*(rocPoints.length-1))];
+  const cx = pad+fx*(W-2*pad), cy = H-pad-fy*(H-2*pad);
+  ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2);
+  ctx.fillStyle = '#06b6d4'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = textColor; ctx.font = '12px Fira Code'; ctx.textAlign = 'center';
+  ctx.fillText('FPR (False Positive Rate)', W/2, H-8);
+  ctx.save(); ctx.translate(14,H/2); ctx.rotate(-Math.PI/2); ctx.fillText('TPR (True Positive Rate)',0,0); ctx.restore();
+  ctx.font = '10px Fira Code';
+  for (let i=0;i<=4;i++) {
+    ctx.textAlign='center'; ctx.fillText((i*0.25).toFixed(2),pad+(W-2*pad)*i/4,H-pad+16);
+    ctx.textAlign='right'; ctx.fillText((i*0.25).toFixed(2),pad-6,H-pad-(H-2*pad)*i/4+4);
+  }
+  ctx.fillStyle='#7c3aed'; ctx.font='500 13px Outfit'; ctx.textAlign='center';
+  ctx.fillText('AUC ≈ 0.85',W/2+30,pad+40);
+}
+function updateROC() {
+  const t = +document.getElementById('roc-threshold').value / 100;
+  const idx = Math.round(t*(rocPoints.length-1));
+  const [fpr,tpr] = rocPoints[idx];
+  document.getElementById('roc-thresh-label').textContent = t.toFixed(2);
+  document.getElementById('roc-tpr').textContent = tpr.toFixed(2);
+  document.getElementById('roc-fpr').textContent = fpr.toFixed(2);
+  document.getElementById('roc-auc-score').textContent = '0.85';
+  let msg = t<0.3 ? '⬇️ <strong>Low threshold:</strong> Catching nearly all positives (high TPR) but generating many false alarms (high FPR). Good for screening.' :
+            t<0.7 ? '⚖️ <strong>Balanced:</strong> Good trade-off between TPR and FPR. Typical operating point.' :
+                   '⬆️ <strong>High threshold:</strong> Very few false alarms (low FPR) but missing real positives (low TPR).';
+  document.getElementById('roc-interp').innerHTML = msg;
+  drawROCCanvas();
+}
+
+// ─── METRIC DOCTOR GAME ────────────────────────────────────────
+const doctorCases = [
+  {
+    domain: '🔍 Fraud Detection',
+    report: 'Accuracy = 99.5%, Recall = 0%',
+    problem: 'Model predicts "No Fraud" for everything',
+    misleading: 'Accuracy',
+    correct: 'Recall',
+    explanation: 'High accuracy due to class imbalance. The model never catches fraud. Recall = 0 is the real story.',
+    color: 'var(--accent5)'
+  },
+  {
+    domain: '🏥 Cancer Screening',
+    report: 'Precision = 0.95, Recall = 0.42',
+    problem: 'Model misses 58% of cancer cases',
+    misleading: 'Precision',
+    correct: 'Recall',
+    explanation: 'Precision looks great but Recall = 0.42 means over half of sick patients are sent home untreated.',
+    color: 'var(--accent6)'
+  },
+  {
+    domain: '📊 Imbalanced Classifier',
+    report: 'Accuracy = 96%, Macro F1 = 0.69',
+    problem: 'Minority class performing very poorly',
+    misleading: 'Accuracy & Weighted Avg',
+    correct: 'Macro Average F1',
+    explanation: 'Accuracy and Weighted Avg are inflated by the dominant class. Macro F1 exposes the minority class failure.',
+    color: 'var(--accent3)'
+  },
+  {
+    domain: '📈 Binary Classifier',
+    report: 'Accuracy = 85%, AUC = 0.51',
+    problem: 'Model barely distinguishes classes',
+    misleading: 'Accuracy',
+    correct: 'AUC-ROC',
+    explanation: 'AUC = 0.51 ≈ random. The model has no real discriminating power despite decent accuracy.',
+    color: 'var(--accent1)'
+  },
+  {
+    domain: '📉 Customer Churn',
+    report: 'Precision = 0.91, Recall = 0.35',
+    problem: 'Missing 65% of churning customers',
+    misleading: 'Precision alone',
+    correct: 'F1 Score',
+    explanation: 'High precision but terrible recall means intervention campaigns miss most customers who will churn. F1 captures this imbalance.',
+    color: 'var(--accent4)'
+  }
+];
+function buildDoctorCards() {
+  const c = document.getElementById('doctor-cards');
+  if (!c) return;
+  c.innerHTML = doctorCases.map((dc, i) => `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+      <div style="padding:18px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;justify-content:space-between;" onclick="toggleDoctor(${i})">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${dc.color};flex-shrink:0"></div>
+          <span style="font-family:'Outfit',sans-serif;font-weight:500;font-size:15px;">${dc.domain}</span>
+          <span style="font-family:'Fira Code',monospace;font-size:12px;color:var(--text3)">${dc.report}</span>
+        </div>
+        <span id="doc-arr-${i}" style="color:var(--accent2);font-size:20px;font-weight:300">+</span>
+      </div>
+      <div id="doc-body-${i}" style="display:none;padding:0 20px 20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);font-family:'Fira Code',monospace;margin-bottom:4px">PROBLEM</div>
+            <div style="font-size:13px;color:var(--accent5)">${dc.problem}</div>
+          </div>
+          <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);font-family:'Fira Code',monospace;margin-bottom:4px">MISLEADING</div>
+            <div style="font-size:13px;color:var(--accent3)">${dc.misleading}</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--text3);font-family:'Fira Code',monospace;margin-bottom:4px">PRESCRIBE</div>
+            <div style="font-size:13px;color:var(--accent4)">${dc.correct}</div>
+          </div>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.7">${dc.explanation}</div>
+      </div>
+    </div>
+  `).join('');
+}
+function toggleDoctor(i) {
+  const b = document.getElementById(`doc-body-${i}`), a = document.getElementById(`doc-arr-${i}`);
+  const vis = b.style.display !== 'none';
+  b.style.display = vis ? 'none' : 'block';
+  a.textContent = vis ? '+' : '−';
+}
+
+// ─── MINI QUIZ ─────────────────────────────────────────────────
+const miniExpl = {
+  mq1: { correct:'B', textCorrect:'✅ Model B! For fraud detection, Recall is king. Model A misses 90% of fraud (Recall=10%). Model B with 90% Recall catches most fraud despite lower accuracy.', textWrong:'❌ Model A looks better on accuracy, but Recall=10% means it misses 90% of all fraudulent transactions. Model B with 90% Recall is far more useful.' },
+  mq2: { correct:'D', textCorrect:'✅ Model D! F1(C) = 2×0.99×0.20/(0.99+0.20) = 0.33. F1(D) = 2×0.80×0.80/(0.80+0.80) = 0.80. Balance wins every time.', textWrong:'❌ Model C has near-perfect precision but terrible recall. F1(C)=0.33 vs F1(D)=0.80. The harmonic mean penalises that extreme imbalance.' }
+};
+function miniQuiz(id, picked, correct) {
+  const el = document.getElementById(id);
+  const data = miniExpl[id];
+  const isCorrect = picked === data.correct;
+  el.style.display = 'block';
+  el.style.background = isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+  el.style.border = isCorrect ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)';
+  el.style.borderRadius = '8px';
+  el.innerHTML = isCorrect ? data.textCorrect : data.textWrong;
+}
+
+// ─── QUIZZES ────────────────────────────────────────────────────
+const quizzes = {
+  acc: [
+    { q:"A model predicts 'No Fraud' for all 10,000 transactions (9,950 legit, 50 fraud). What is the accuracy?", opts:["99.5%","80%","50%","2%"], ans:0, exp:"Accuracy = 9950/10000 = 99.5%. But Recall = 0 — it detected zero fraud. This is the accuracy paradox." },
+    { q:"When is accuracy a reliable metric?", opts:["When classes are severely imbalanced","When dataset is balanced across classes","When there are more than 5 classes","When recall matters more"], ans:1, exp:"Accuracy works well when classes are roughly balanced — equal samples per class." },
+    { q:"Your cancer model has 99% accuracy but Recall = 0. What does this mean?", opts:["Excellent model — deploy immediately","Model catches no cancer patients — completely useless","Only Precision matters for cancer","The dataset needs more features"], ans:1, exp:"Recall=0 means the model never detected a single cancer case. Accuracy is 99% only because healthy patients dominate." }
+  ],
+  pr: [
+    { q:"Cancer detection model: Precision=0.60, Recall=0.95. Should you be worried?", opts:["Yes — precision is too low","No — for medical diagnosis, high recall is the priority","Yes — F1 score is too low","No — only AUC matters in medicine"], ans:1, exp:"For cancer detection, high Recall is critical — missing a case (FN) can be fatal. Lower precision just means more follow-up tests." },
+    { q:"Recall = TP / (TP + FN). What does FN represent?", opts:["Cases correctly predicted as positive","Actual positives we predicted as negative — the ones we MISSED","Cases wrongly predicted as positive","Cases correctly predicted as negative"], ans:1, exp:"FN = False Negatives — actual POSITIVE cases the model missed by predicting them as negative." },
+    { q:"Spam filter: Precision=0.99, Recall=0.70. What does this tell us?", opts:["Too many real emails are blocked","Almost no real emails blocked, but 30% spam slips through","The model is broken","Recall should always be higher"], ans:1, exp:"Precision=0.99 = almost no real emails blocked. Recall=0.70 = 30% spam gets through. For spam filters, this is perfectly acceptable." }
+  ],
+  f1: [
+    { q:"Model A: P=1.0, R=0.0. What is its F1 Score?", opts:["0.5","1.0","0.0","Cannot calculate"], ans:2, exp:"F1 = 2×(1.0×0.0)/(1.0+0.0) = 0. The harmonic mean correctly identifies this as useless. Arithmetic mean would give 0.5 — misleading!" },
+    { q:"Why does F1 use harmonic mean instead of arithmetic mean?", opts:["It's easier to compute","Harmonic mean strongly penalises extreme values — if P or R is near 0, F1 collapses to 0","Arithmetic mean overestimates performance","Harmonic mean is always larger"], ans:1, exp:"The harmonic mean punishes imbalance. P=0.01, R=0.99 gives very low F1 — correctly flagging the model is broken." },
+    { q:"Student analogy: Scores 100 in Maths, 10 in Science. Arithmetic mean = 55. What's the lesson for F1?", opts:["The student is excellent","This represents a balanced performer","F1 would give a much lower score — balance matters","Only the best subject counts"], ans:2, exp:"Just like F1 punishes a model that's extreme in one metric, a student who fails science despite acing maths isn't an 'overall topper'." }
+  ],
+  report: [
+    { q:"What does 'support' mean in a classification report?", opts:["The model's confidence score","Number of actual samples in that class in the test set","Number of correct predictions","The F1 score threshold"], ans:1, exp:"Support = actual count of samples in that class. Low support means the per-class metrics are less statistically reliable." },
+    { q:"Macro F1=0.69, Weighted F1=0.95. What does this likely indicate?", opts:["The model is perfect","Majority class performs well, minority class is struggling","Rare classes outperform common classes","Dataset is balanced"], ans:1, exp:"Macro (equal weight) is much lower than Weighted (support-weighted), meaning the majority class carries Weighted avg while minority class suffers." },
+    { q:"Which average exposes minority class problems most directly?", opts:["Weighted Average","Accuracy","Micro Average","Macro Average"], ans:3, exp:"Macro Average gives equal weight to every class. A struggling minority class pulls the Macro avg down, directly exposing the problem." }
+  ],
+  auc: [
+    { q:"AUC = 0.50. What does this mean?", opts:["50% accuracy","Model performs no better than random chance","Model is 50% better than chance","Recall equals precision"], ans:1, exp:"AUC=0.5 = the model randomly ranks positives and negatives with no real skill. Go back to the drawing board." },
+    { q:"What is plotted on the X-axis of an ROC curve?", opts:["Precision","Recall (TPR)","False Positive Rate (FPR)","F1 Score"], ans:2, exp:"ROC plots TPR (recall) on Y-axis vs FPR (1-specificity) on X-axis across all thresholds." },
+    { q:"AUC = 0.85 means:", opts:["85% accuracy","Model ranks a random positive higher than a random negative 85% of the time","85% of predictions are correct","Threshold should be set at 0.85"], ans:1, exp:"AUC is a ranking quality metric. AUC=0.85 means 85% chance the model correctly ranks a positive case above a negative one." }
+  ],
+  master: [
+    { q:"🏥 Model gets 99% accuracy on cancer dataset (1% sick, 99% healthy). Recall=0. You would:", opts:["Deploy it — 99% is excellent","Reject it — Recall=0 means it detects no cancer","Retrain with more epochs","Change the activation function"], ans:1, exp:"Classic accuracy paradox. 99% accuracy by predicting 'Healthy' for everyone. Recall=0 is a complete failure for a medical model." },
+    { q:"📊 Report shows: Macro F1=0.69, Weighted F1=0.95, Accuracy=96%. Which metric tells the real story?", opts:["Accuracy=96%","Weighted F1=0.95","Macro F1=0.69 — minority class is struggling","All three say the same thing"], ans:2, exp:"Macro F1 gives equal weight to all classes. Its low value exposes that the minority class is performing poorly, masked by the other metrics." },
+    { q:"⚖️ Model C: P=0.99, R=0.20. Model D: P=0.80, R=0.80. For customer churn prediction, which wins?", opts:["Model C — higher precision","Model D — F1=0.80 vs F1=0.33","They are equivalent","Depends on the threshold"], ans:1, exp:"F1(C)=2×0.99×0.20/1.19=0.33. F1(D)=0.80. For churn where both FP and FN have costs, the balanced model wins easily." },
+    { q:"📈 Two models: AUC=0.75 and AUC=0.88, both 80% accuracy. For fraud detection, deploy which?", opts:["80% accuracy model — it's the same","AUC=0.88 — better ranking/discrimination","AUC=0.75 — more conservative","They're equivalent for fraud"], ans:1, exp:"AUC=0.88 correctly ranks fraud higher than legit 88% of the time. For fraud detection this discriminating power is what matters, not raw accuracy." },
+    { q:"🩺 Metric Doctor: Report shows Accuracy=98%, Recall=0.05. Domain = terrorist threat detection. Diagnosis?", opts:["Good model — high accuracy","Critical failure — missing 95% of real threats","Recall should be 0 for safety","Precision needs to increase"], ans:1, exp:"For threat detection, Recall=0.05 is catastrophic — 95% of real threats go undetected. Accuracy is inflated by the vast majority of non-threats." }
+  ]
+};
+
+function buildQuiz(questions, containerId, quizId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  const state = { current:0, score:0, answered:false };
+  function render() {
+    if (state.current >= questions.length) {
+      const pct = Math.round(state.score/questions.length*100);
+      const emoji = pct>=80?'🎉':pct>=60?'😊':'📚';
+      c.innerHTML = `<div class="score-display"><div class="score-num">${pct}%</div><div class="score-msg">${emoji} ${pct>=80?'Excellent!':pct>=60?'Good job!':'Keep practicing!'}</div><div class="score-label">${state.score} / ${questions.length} correct</div><button class="btn-primary" onclick="restart_${quizId}()" style="margin-top:20px">Try Again</button></div>`;
+      return;
+    }
+    const q = questions[state.current];
+    c.innerHTML = `<div class="quiz-header"><h2 style="font-family:'Outfit',sans-serif;font-weight:500;font-size:20px">🧠 Quiz</h2><span class="quiz-progress">${state.current+1} / ${questions.length}</span></div>
+    <div class="quiz-card"><div class="quiz-q">${q.q}</div><div class="quiz-opts">${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answer_${quizId}(${i})">${o}</button>`).join('')}</div>
+    <div class="quiz-feedback" id="qfb-${quizId}"></div><div class="quiz-nav" id="qnav-${quizId}" style="display:none"><button class="btn-primary" onclick="next_${quizId}()">Next →</button></div></div>`;
+  }
+  window[`answer_${quizId}`] = function(i) {
+    if (state.answered) return;
+    state.answered = true;
+    const q = questions[state.current];
+    const btns = c.querySelectorAll('.quiz-opt');
+    const fb = document.getElementById(`qfb-${quizId}`);
+    btns[q.ans].classList.add('correct');
+    if (i !== q.ans) btns[i].classList.add('wrong');
+    else state.score++;
+    btns.forEach(b=>b.disabled=true);
+    fb.textContent = (i===q.ans?'✅ Correct! ':'❌ Not quite. ')+q.exp;
+    fb.className = 'quiz-feedback show '+(i===q.ans?'correct-fb':'wrong-fb');
+    document.getElementById(`qnav-${quizId}`).style.display='flex';
+  };
+  window[`next_${quizId}`] = function() { state.current++; state.answered=false; render(); };
+  window[`restart_${quizId}`] = function() { state.current=0; state.score=0; state.answered=false; render(); };
+  render();
+}
+
+buildQuiz(quizzes.acc,'acc-quiz','acc');
+buildQuiz(quizzes.pr,'pr-quiz','pr');
+buildQuiz(quizzes.f1,'f1-quiz','f1');
+buildQuiz(quizzes.report,'report-quiz','report');
+buildQuiz(quizzes.auc,'auc-quiz','auc');
+buildQuiz(quizzes.master,'master-quiz','master');
+buildBattleTable();
+buildDoctorCards();
+renderPatientCards(null);
+
+window.addEventListener('load', () => { setTimeout(drawROCCanvas,200); });
+</script>
+</body>
+</html>
